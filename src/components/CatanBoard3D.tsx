@@ -1,6 +1,6 @@
 import { useRef, useMemo, createContext, useContext } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
-import { Float, Environment, OrbitControls, Text, Billboard } from '@react-three/drei';
+import { Environment, OrbitControls, Text, Billboard } from '@react-three/drei';
 import * as THREE from 'three';
 import type { BoardDefinition, TileType } from '../lib/boardTypes';
 import { TILE_COLORS, isHotNumber, getNumberDots } from '../lib/boardTypes';
