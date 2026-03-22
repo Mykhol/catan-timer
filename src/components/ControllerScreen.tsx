@@ -151,6 +151,12 @@ export default function ControllerScreen({ gameCode, onBack }: ControllerScreenP
       <div className="controller-buttons">
         <button
           className="controller-btn controller-reset"
+          onClick={() => actions.prevPlayer()}
+        >
+          &#x2190; Prev
+        </button>
+        <button
+          className="controller-btn controller-reset"
           onClick={() => actions.resetTimer()}
         >
           Reset

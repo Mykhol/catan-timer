@@ -863,20 +863,21 @@ function BoardScene({ board }: { board: BoardDefinition }) {
     return mr;
   }, [board]);
 
-  // Fill all empty positions within the board extent with water
+  // Fill all empty positions up to the outer water ring with water
+  const fillRadius = Math.max(maxRing, waterRings - 1);
   const fillWaterTiles = useMemo(() => {
     const tiles: [number, number][] = [];
-    for (let q = -maxRing; q <= maxRing; q++) {
-      for (let r = -maxRing; r <= maxRing; r++) {
+    for (let q = -fillRadius; q <= fillRadius; q++) {
+      for (let r = -fillRadius; r <= fillRadius; r++) {
         const s = -q - r;
-        if (Math.max(Math.abs(q), Math.abs(r), Math.abs(s)) > maxRing) continue;
+        if (Math.max(Math.abs(q), Math.abs(r), Math.abs(s)) > fillRadius) continue;
         if (!occupied.has(`${q},${r}`)) {
           tiles.push([q, r]);
         }
       }
     }
     return tiles;
-  }, [maxRing, occupied]);
+  }, [fillRadius, occupied]);
 
   // Also include explicitly defined water tiles
   const explicitWater = board.tiles.filter(t => t.type === 'water');

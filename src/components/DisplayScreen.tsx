@@ -215,6 +215,12 @@ export default function DisplayScreen({ gameCode, onBack }: DisplayScreenProps) 
       <div className="controller-buttons display-controls">
         <button
           className="controller-btn controller-reset"
+          onClick={() => actions.prevPlayer()}
+        >
+          &#x2190; Prev
+        </button>
+        <button
+          className="controller-btn controller-reset"
           onClick={() => actions.resetTimer()}
         >
           Reset
@@ -231,6 +237,25 @@ export default function DisplayScreen({ gameCode, onBack }: DisplayScreenProps) 
         >
           Next &#x2192;
         </button>
+      </div>
+
+      <div className="display-music-controls">
+        <button
+          className={`controller-btn controller-music ${gameState.music_playing ? 'controller-music-active' : ''}`}
+          onClick={() => actions.toggleMusic()}
+        >
+          {gameState.music_playing ? 'Stop Music' : 'Music'}
+        </button>
+        {gameState.music_playing && (
+          <input
+            type="range"
+            min="0"
+            max="100"
+            value={gameState.music_volume ?? 40}
+            onChange={(e) => actions.setVolume(Number(e.target.value))}
+            className="volume-slider"
+          />
+        )}
       </div>
 
       <div className="player-queue">

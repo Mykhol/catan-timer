@@ -12,6 +12,7 @@ interface UseGameSyncReturn {
     resumeTimer: () => Promise<void>;
     resetTimer: () => Promise<void>;
     nextPlayer: () => Promise<void>;
+    prevPlayer: () => Promise<void>;
     toggleMusic: () => Promise<void>;
     setVolume: (volume: number) => Promise<void>;
     endGame: () => Promise<void>;
@@ -162,6 +163,20 @@ export function useGameSync(gameCode: string): UseGameSyncReturn {
     await updateGame(updates);
   }, [updateGame]);
 
+  const prevPlayer = useCallback(async () => {
+    const gs = gameStateRef.current;
+    if (!gs) return;
+    const prevIndex = (gs.current_player_index - 1 + gs.players.length) % gs.players.length;
+    const prevTurn = prevIndex === gs.players.length - 1 ? Math.max(1, gs.turn_number - 1) : gs.turn_number;
+    await updateGame({
+      current_player_index: prevIndex,
+      turn_number: prevTurn,
+      timer_state: 'idle',
+      timer_remaining: gs.turn_time,
+      timer_started_at: null,
+    });
+  }, [updateGame]);
+
   const toggleMusic = useCallback(async () => {
     const gs = gameStateRef.current;
     if (!supabase || !gs) return;
@@ -192,6 +207,6 @@ export function useGameSync(gameCode: string): UseGameSyncReturn {
     gameState,
     connected,
     error,
-    actions: { startTimer, pauseTimer, resumeTimer, resetTimer, nextPlayer, toggleMusic, setVolume, endGame },
+    actions: { startTimer, pauseTimer, resumeTimer, resetTimer, nextPlayer, prevPlayer, toggleMusic, setVolume, endGame },
   };
 }
