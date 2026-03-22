@@ -36,11 +36,15 @@ export function useWakeLock() {
       video.setAttribute('webkit-playsinline', '');
       video.loop = true;
       // NOT muted — iOS needs unmuted audio to prevent sleep
-      // Volume near zero so it's inaudible
       video.muted = false;
       video.volume = 0.001;
       video.src = '/silence.mp4';
       video.style.cssText = 'position:fixed;top:-10px;left:-10px;width:1px;height:1px;opacity:0.01;pointer-events:none;z-index:-9999';
+      // iOS sometimes ignores loop — manually restart on end
+      video.addEventListener('ended', () => {
+        video.currentTime = 0;
+        video.play().catch(() => {});
+      });
       document.body.appendChild(video);
       videoRef.current = video;
     }
