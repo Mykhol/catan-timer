@@ -190,7 +190,8 @@ export default function DisplayScreen({ gameCode, onBack }: DisplayScreenProps) 
     return 'Start';
   };
 
-  const urgencyLevel = !isCompleted && timeLeft > 0
+  // Show urgency colors when running OR paused (but paused = no animation)
+  const urgencyLevel = (isRunning || isPaused) && timeLeft > 0
     ? timeLeft <= 5 ? 'critical'
     : timeLeft <= 10 ? 'urgent'
     : timeLeft <= 20 ? 'warning'
@@ -202,12 +203,14 @@ export default function DisplayScreen({ gameCode, onBack }: DisplayScreenProps) 
     'timer-display',
     urgencyLevel === 'critical' ? 'pulse-red' : '',
     urgencyLevel === 'urgent' ? 'pulse-yellow' : '',
+    isPaused ? 'pulse-paused' : '',
     isCompleted ? 'time-up' : '',
   ].filter(Boolean).join(' ');
 
   const screenClass = [
     'timer-screen',
     urgencyLevel ? `screen-glow-${urgencyLevel}` : '',
+    isPaused ? 'screen-paused' : '',
     isCompleted ? 'screen-flash-up' : '',
   ].filter(Boolean).join(' ');
 

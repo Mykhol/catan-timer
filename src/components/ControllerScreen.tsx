@@ -33,7 +33,10 @@ export default function ControllerScreen({ gameCode, onBack }: ControllerScreenP
   if (!gameState) {
     return (
       <div className="rc-screen">
-        <div className="rc-loading">{connected ? 'Loading...' : 'Connecting...'}</div>
+        <div className="rc-loading">
+          {error ? 'Game not found' : connected ? 'Loading...' : 'Connecting...'}
+        </div>
+        {error && <button className="rc-btn rc-btn-secondary" style={{ maxWidth: 200 }} onClick={onBack}>Back</button>}
       </div>
     );
   }

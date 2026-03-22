@@ -32,7 +32,11 @@ export function useGameSync(gameCode: string): UseGameSyncReturn {
 
   // Fetch initial state and subscribe
   useEffect(() => {
-    if (!supabase || !gameCode) return;
+    if (!gameCode) return;
+    if (!supabase) {
+      setError('Not connected to server');
+      return;
+    }
 
     let cancelled = false;
 
