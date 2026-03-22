@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState } from 'react';
 import { useGameSync } from '../hooks/useGameSync';
 import { useSyncedTimer } from '../hooks/useSyncedTimer';
 import { useElapsedTime } from '../hooks/useElapsedTime';
@@ -15,44 +15,15 @@ export default function ControllerScreen({ gameCode, onBack }: ControllerScreenP
   const { gameState, connected, error, actions } = useGameSync(gameCode);
   const timeLeft = useSyncedTimer(gameState);
   const gameElapsed = useElapsedTime(gameState?.game_started_at);
-
-  // Local volume state with debounced sync to DB
-  const [localVolume, setLocalVolume] = useState(gameState?.music_volume ?? 30);
-  const volumeTimerRef = useRef<number | null>(null);
-  const isSlidingRef = useRef(false);
-
-  // Sync from DB when it changes externally — but not while user is dragging
-  useEffect(() => {
-    if (gameState?.music_volume != null && !isSlidingRef.current) {
-      setLocalVolume(gameState.music_volume);
-    }
-  }, [gameState?.music_volume]);
-
-  const handleVolumeChange = useCallback((val: number) => {
-    isSlidingRef.current = true;
-    setLocalVolume(val);
-    if (volumeTimerRef.current) clearTimeout(volumeTimerRef.current);
-    volumeTimerRef.current = window.setTimeout(() => {
-      actions.setVolume(val);
-      // Allow DB sync again after a short delay
-      setTimeout(() => { isSlidingRef.current = false; }, 500);
-    }, 300);
-  }, [actions]);
-
-  // Controller never writes completion — that's the display's responsibility
+  const [menuOpen, setMenuOpen] = useState(false);
 
   if (error) {
     return (
-      <div className="setup-screen">
-        <div className="setup-header">
-          <div className="hex-icon">&#x2B22;</div>
-          <h1>Game Not Found</h1>
-          <h2>Check the code and try again</h2>
-        </div>
-        <div className="setup-card lobby-card">
-          <button className="start-button lobby-btn" onClick={onBack}>
-            Back to Lobby
-          </button>
+      <div className="rc-screen">
+        <div className="rc-error">
+          <h2>Game Not Found</h2>
+          <p>Check the code and try again</p>
+          <button className="rc-btn rc-btn-primary" onClick={onBack}>Back</button>
         </div>
       </div>
     );
@@ -60,11 +31,8 @@ export default function ControllerScreen({ gameCode, onBack }: ControllerScreenP
 
   if (!gameState) {
     return (
-      <div className="setup-screen">
-        <div className="setup-header">
-          <div className="hex-icon">&#x2B22;</div>
-          <h1>{connected ? 'Loading...' : 'Connecting...'}</h1>
-        </div>
+      <div className="rc-screen">
+        <div className="rc-loading">{connected ? 'Loading...' : 'Connecting...'}</div>
       </div>
     );
   }
@@ -87,13 +55,9 @@ export default function ControllerScreen({ gameCode, onBack }: ControllerScreenP
     : `${seconds}`;
 
   const handleStartPause = () => {
-    if (isIdle || isCompleted) {
-      actions.startTimer();
-    } else if (isRunning) {
-      actions.pauseTimer();
-    } else if (isPaused) {
-      actions.resumeTimer();
-    }
+    if (isIdle || isCompleted) actions.startTimer();
+    else if (isRunning) actions.pauseTimer();
+    else if (isPaused) actions.resumeTimer();
   };
 
   const getStartPauseLabel = () => {
@@ -104,89 +68,64 @@ export default function ControllerScreen({ gameCode, onBack }: ControllerScreenP
   };
 
   return (
-    <div className="controller-screen">
-      <div className="controller-header">
-        <button className="back-button" onClick={onBack}>&#x2190;</button>
-        <span className="game-code-badge">{gameCode}</span>
-        <div className="controller-header-right">
-          {gameElapsed && <span className="game-elapsed">{gameElapsed}</span>}
-          <div className={`connection-dot ${connected ? 'connected' : 'disconnected'}`} />
+    <div className="rc-screen">
+      {/* Compact header */}
+      <div className="rc-header">
+        <span className="rc-code">{gameCode}</span>
+        <div className={`connection-dot ${connected ? 'connected' : 'disconnected'}`} />
+        <button className="rc-menu-btn" onClick={() => setMenuOpen(!menuOpen)}>&#x2630;</button>
+      </div>
+
+      {/* Menu overlay */}
+      {menuOpen && (
+        <div className="rc-menu-overlay" onClick={() => setMenuOpen(false)}>
+          <div className="rc-menu" onClick={(e) => e.stopPropagation()}>
+            <button className="rc-menu-item" onClick={() => { actions.toggleMusic(); }}>
+              {gameState.music_playing ? 'Stop Music' : 'Play Music'}
+            </button>
+            <button className="rc-menu-item" onClick={() => window.open(`/board?game=${gameCode}`, '_blank')}>
+              Explore Board
+            </button>
+            <button className="rc-menu-item rc-menu-danger" onClick={() => { actions.endGame(); setMenuOpen(false); }}>
+              End Game
+            </button>
+            <button className="rc-menu-item" onClick={() => { setMenuOpen(false); onBack(); }}>
+              Leave
+            </button>
+          </div>
         </div>
+      )}
+
+      {/* Player + timer */}
+      <div className="rc-player" style={{ borderColor: currentColor }}>
+        <div className="rc-player-dot" style={{ backgroundColor: currentColor }} />
+        <span className="rc-player-name">{currentPlayer.name}</span>
       </div>
 
-      <div className="controller-player" style={{ borderColor: currentColor }}>
-        <div className="player-color-dot" style={{ backgroundColor: currentColor }} />
-        <span>{currentPlayer.name}</span>
+      <div className={`rc-timer ${isCompleted ? 'rc-timer-up' : ''} ${!isCompleted && timeLeft <= 10 && timeLeft > 0 ? 'rc-timer-warn' : ''}`}>
+        {isCompleted ? "TIME'S UP" : timeDisplay}
       </div>
 
-      <div className="controller-round">Round {gameState.turn_number}</div>
-
-      <div className={`controller-time ${isCompleted ? 'controller-time-up' : ''} ${!isCompleted && timeLeft <= 5 && timeLeft > 0 ? 'controller-time-urgent' : ''} ${!isCompleted && timeLeft <= 10 && timeLeft > 5 ? 'controller-time-warning' : ''}`}>
-        {isCompleted ? "TIME'S UP!" : timeDisplay}
+      <div className="rc-info">
+        <span>Round {gameState.turn_number}</span>
+        {gameElapsed && <span>{gameElapsed}</span>}
       </div>
 
-      <div className="controller-buttons">
-        <button
-          className="controller-btn controller-reset"
-          onClick={() => actions.prevPlayer()}
-        >
+      {/* Big action buttons */}
+      <div className="rc-actions">
+        <button className="rc-btn rc-btn-secondary" onClick={() => actions.prevPlayer()}>
           &#x2190; Prev
         </button>
-        <button
-          className="controller-btn controller-reset"
-          onClick={() => actions.resetTimer()}
-        >
-          Reset
-        </button>
-        <button
-          className="controller-btn controller-play"
-          onClick={handleStartPause}
-        >
+        <button className="rc-btn rc-btn-primary rc-btn-big" onClick={handleStartPause}>
           {getStartPauseLabel()}
         </button>
-        <button
-          className="controller-btn controller-next"
-          onClick={() => actions.nextPlayer()}
-        >
+        <button className="rc-btn rc-btn-next" onClick={() => actions.nextPlayer()}>
           Next &#x2192;
         </button>
       </div>
 
-      <div className="controller-music-section">
-        <button
-          className={`controller-btn controller-music ${gameState.music_playing ? 'controller-music-active' : ''}`}
-          onClick={() => actions.toggleMusic()}
-        >
-          {gameState.music_playing ? 'Stop Music' : 'Play Music'}
-        </button>
-        {gameState.music_playing && (
-          <div className="volume-row">
-            <span className="volume-label">Vol</span>
-            <input
-              type="range"
-              min="0"
-              max="100"
-              value={localVolume}
-              onChange={(e) => handleVolumeChange(Number(e.target.value))}
-              className="volume-slider"
-            />
-            <span className="volume-value">{localVolume}</span>
-          </div>
-        )}
-      </div>
-
-      <button
-        className="controller-btn controller-music"
-        onClick={() => window.open(`/board?game=${gameCode}`, '_blank')}
-      >
-        Explore Board
-      </button>
-
-      <button
-        className="controller-btn controller-end"
-        onClick={() => actions.endGame()}
-      >
-        End Game
+      <button className="rc-btn rc-btn-reset" onClick={() => actions.resetTimer()}>
+        Reset Timer
       </button>
     </div>
   );

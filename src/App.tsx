@@ -91,11 +91,13 @@ function App() {
 
   return (
     <>
-      <CatanBoard3D
-        board={board}
-        spinning={screen.type !== 'board-generator'}
-        dimOverlay={screen.type !== 'board-generator'}
-      />
+      {screen.type !== 'controller' && (
+        <CatanBoard3D
+          board={board}
+          spinning={screen.type !== 'board-generator'}
+          dimOverlay={screen.type !== 'board-generator'}
+        />
+      )}
       {screen.type === 'lobby' && (
         <LobbyScreen
           onAction={(action) => {
