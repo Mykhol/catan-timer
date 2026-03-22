@@ -3,6 +3,7 @@ import { useGameSync } from '../hooks/useGameSync';
 import { useSyncedTimer } from '../hooks/useSyncedTimer';
 import { useElapsedTime } from '../hooks/useElapsedTime';
 import StatsScreen from './StatsScreen';
+import GameCodeBadge from './GameCodeBadge';
 
 const playerColors = ['#e74c3c', '#3498db', '#f39c12', '#2ecc71', '#9b59b6', '#e67e22'];
 
@@ -71,8 +72,7 @@ export default function ControllerScreen({ gameCode, onBack }: ControllerScreenP
     <div className="rc-screen">
       {/* Compact header */}
       <div className="rc-header">
-        <span className="rc-code">{gameCode}</span>
-        <div className={`connection-dot ${connected ? 'connected' : 'disconnected'}`} />
+        <GameCodeBadge code={gameCode} connected={connected} />
         <button className="rc-menu-btn" onClick={() => setMenuOpen(!menuOpen)}>&#x2630;</button>
       </div>
 

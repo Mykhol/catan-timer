@@ -7,6 +7,7 @@ import { startMusic, stopMusic, setMusicVolume } from '../utils/music';
 import { playRandomVoiceClip, playTimesUpClip, stopVoiceClip } from '../utils/voiceClips';
 import { useElapsedTime } from '../hooks/useElapsedTime';
 import StatsScreen from './StatsScreen';
+import GameCodeBadge from './GameCodeBadge';
 
 const playerColors = ['#e74c3c', '#3498db', '#f39c12', '#2ecc71', '#9b59b6', '#e67e22'];
 
@@ -214,7 +215,7 @@ export default function DisplayScreen({ gameCode, onBack }: DisplayScreenProps) 
     <div className={screenClass}>
       <div className="timer-top-bar">
         <div className="top-bar-left">
-          <span className="game-code-badge">{gameCode}</span>
+          <GameCodeBadge code={gameCode} connected={connected} />
         </div>
         <div className="top-bar-right">
           {gameElapsed && <span className="game-elapsed">{gameElapsed}</span>}
@@ -312,9 +313,6 @@ export default function DisplayScreen({ gameCode, onBack }: DisplayScreenProps) 
         ))}
       </div>
 
-      <div className="connection-dot-wrapper">
-        <div className={`connection-dot ${connected ? 'connected' : 'disconnected'}`} />
-      </div>
     </div>
   );
 }

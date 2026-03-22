@@ -776,6 +776,38 @@ body {
   color: var(--catan-gold);
 }
 
+.gc-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.15em;
+  padding: 0.3rem 0.7rem;
+  background: rgba(218, 165, 32, 0.15);
+  border: 1px solid var(--catan-gold);
+  border-radius: 6px;
+  color: var(--catan-gold);
+}
+
+.gc-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.gc-dot-on {
+  background: #2ecc71;
+  box-shadow: 0 0 4px rgba(46, 204, 113, 0.5);
+}
+
+.gc-dot-off {
+  background: var(--catan-red);
+  box-shadow: 0 0 4px rgba(192, 57, 43, 0.5);
+}
+
 .share-button {
   font-family: 'Inter', sans-serif;
   font-size: 0.75rem;
