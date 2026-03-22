@@ -2,9 +2,9 @@ import { useState, useEffect, useRef, useCallback, type MouseEvent } from 'react
 import { useGameSync } from '../hooks/useGameSync';
 import { useSyncedTimer } from '../hooks/useSyncedTimer';
 import { supabase } from '../lib/supabase';
-import { playCatanHorn, playWarningTick, playUrgentTick, initAudio } from '../utils/sound';
+import { playWarningTick, playUrgentTick, initAudio } from '../utils/sound';
 import { startMusic, stopMusic, setMusicVolume } from '../utils/music';
-import { playRandomVoiceClip, stopVoiceClip } from '../utils/voiceClips';
+import { playRandomVoiceClip, playTimesUpClip, stopVoiceClip } from '../utils/voiceClips';
 import { useElapsedTime } from '../hooks/useElapsedTime';
 import StatsScreen from './StatsScreen';
 
@@ -89,7 +89,8 @@ export default function DisplayScreen({ gameCode, onBack }: DisplayScreenProps) 
     // but the realtime update arrives before useSyncedTimer recomputes.
     if (gameState.timer_remaining > 1) return;
     completionWrittenRef.current = true;
-    playCatanHorn();
+    stopVoiceClip(); // Stop any warning clip that's still playing
+    playTimesUpClip();
     await supabase
       .from('games')
       .update({ timer_state: 'completed', timer_remaining: 0, timer_started_at: null })
@@ -102,10 +103,10 @@ export default function DisplayScreen({ gameCode, onBack }: DisplayScreenProps) 
     }
   }, [timeLeft, gameState?.timer_state, writeCompletion]);
 
-  // Play horn when we receive completed state (e.g. from controller fallback)
+  // Reset completion flag when state changes from completed
   useEffect(() => {
     if (gameState?.timer_state === 'completed' && !completionWrittenRef.current) {
-      playCatanHorn();
+      completionWrittenRef.current = true;
     }
   }, [gameState?.timer_state]);
 
