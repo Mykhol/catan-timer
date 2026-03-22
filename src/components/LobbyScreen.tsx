@@ -4,7 +4,8 @@ import { supabase } from '../lib/supabase';
 type LobbyAction =
   | { type: 'local' }
   | { type: 'host' }
-  | { type: 'join'; gameCode: string };
+  | { type: 'join'; gameCode: string }
+  | { type: 'generate-board' };
 
 interface LobbyScreenProps {
   onAction: (action: LobbyAction) => void;
@@ -40,6 +41,13 @@ export default function LobbyScreen({ onAction }: LobbyScreenProps) {
           onClick={() => onAction({ type: 'local' })}
         >
           Play Locally
+        </button>
+
+        <button
+          className="start-button lobby-btn lobby-btn-secondary"
+          onClick={() => onAction({ type: 'generate-board' })}
+        >
+          Generate Board
         </button>
 
         {remoteEnabled && (

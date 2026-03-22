@@ -1031,6 +1031,40 @@ body {
   opacity: 0.8;
 }
 
+/* ========== BOARD GENERATOR ========== */
+
+.board-type-picker {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+}
+
+.board-type-btn {
+  height: 48px;
+  border: 2px solid var(--catan-brown);
+  background: rgba(139, 69, 19, 0.2);
+  color: var(--catan-cream);
+  font-family: 'Cinzel', serif;
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.board-type-btn:hover {
+  border-color: var(--catan-gold);
+}
+
+.board-type-btn.active {
+  border-color: var(--catan-gold);
+  background: rgba(218, 165, 32, 0.25);
+  color: var(--catan-gold);
+  box-shadow: 0 0 12px rgba(218, 165, 32, 0.2);
+}
+
 /* ========== STATS SCREEN ========== */
 
 .stats-card {

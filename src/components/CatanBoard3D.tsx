@@ -1,12 +1,19 @@
 import { useRef, useMemo, createContext, useContext } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
-import { Float, Environment, OrbitControls } from '@react-three/drei';
+import { Float, Environment, OrbitControls, Text, Billboard } from '@react-three/drei';
 import * as THREE from 'three';
+import type { BoardDefinition, BoardTile, TileType } from '../lib/boardTypes';
+import { TILE_COLORS, isHotNumber, getNumberDots } from '../lib/boardTypes';
+import { STANDARD_BOARD } from '../lib/boardLayouts';
 
 // Context to let decorations sample terrain height
 type TerrainHeightFn = (x: number, z: number) => number;
 const HexTileContext = createContext<TerrainHeightFn>(() => 0.125);
 const useTerrainY = () => useContext(HexTileContext);
+
+// Context to let children know if the parent tile is hovered
+const HexHoverContext = createContext<React.MutableRefObject<boolean>>({ current: false });
+const useHexHovered = () => useContext(HexHoverContext);
 
 // ─── Seeded random for deterministic "randomness" ───────────────
 
@@ -21,40 +28,7 @@ function seededRandom(seed: number) {
 // ─── Hex tile layout ────────────────────────────────────────────
 
 const HEX_SIZE = 1.0;
-const GAP = 0.06;
-
-type TileType = 'wheat' | 'forest' | 'sheep' | 'brick' | 'ore' | 'desert';
-
-const BOARD: { q: number; r: number; type: TileType }[] = [
-  { q: 0, r: 0, type: 'desert' },
-  { q: 1, r: 0, type: 'wheat' },
-  { q: 0, r: 1, type: 'forest' },
-  { q: -1, r: 1, type: 'sheep' },
-  { q: -1, r: 0, type: 'brick' },
-  { q: 0, r: -1, type: 'ore' },
-  { q: 1, r: -1, type: 'wheat' },
-  { q: 2, r: 0, type: 'forest' },
-  { q: 1, r: 1, type: 'sheep' },
-  { q: 0, r: 2, type: 'brick' },
-  { q: -1, r: 2, type: 'wheat' },
-  { q: -2, r: 2, type: 'ore' },
-  { q: -2, r: 1, type: 'forest' },
-  { q: -2, r: 0, type: 'sheep' },
-  { q: -1, r: -1, type: 'wheat' },
-  { q: 0, r: -2, type: 'brick' },
-  { q: 1, r: -2, type: 'forest' },
-  { q: 2, r: -2, type: 'ore' },
-  { q: 2, r: -1, type: 'sheep' },
-];
-
-const TILE_COLORS: Record<TileType, { base: string; dark: string; light: string }> = {
-  wheat:  { base: '#e8c84a', dark: '#c9a227', light: '#f0d86a' },
-  forest: { base: '#2d8a4e', dark: '#1a6b3a', light: '#3aad62' },
-  sheep:  { base: '#7ec850', dark: '#5aa832', light: '#9ade70' },
-  brick:  { base: '#c0542d', dark: '#8b3a1f', light: '#d4704a' },
-  ore:    { base: '#6b7b8d', dark: '#4a5568', light: '#8a9aac' },
-  desert: { base: '#d4b483', dark: '#b8956a', light: '#e8cfa0' },
-};
+const GAP = 0;
 
 function axialToWorld(q: number, r: number): [number, number] {
   const s = HEX_SIZE + GAP;
@@ -101,29 +75,69 @@ function terrainHeight(x: number, z: number, hilliness: number, seed: number): n
 }
 
 // Build a hex-shaped top cap with concentric vertex rings for smooth displacement
-function createHexTopGeometry(seed: number, hilliness: number, yBase: number): THREE.BufferGeometry {
+// Adds per-vertex color attribute driven by noise to give light/dark terrain patches
+function createHexTopGeometry(
+  seed: number,
+  hilliness: number,
+  yBase: number,
+  tileType: TileType,
+): THREE.BufferGeometry {
   const numRings = 12;
   const vertsPerRing = 36; // smooth rings
 
   // Uses top-level hexRadiusAtAngle
 
   const verts: number[] = [];
+  const vertColors: number[] = [];
   const idxs: number[] = [];
 
+  const palette = TILE_COLORS[tileType];
+  const baseCol = new THREE.Color(palette.base);
+  const darkCol = new THREE.Color(palette.dark);
+  const lightCol = new THREE.Color(palette.light);
+
+  // Noise for color variation — separate from terrain height noise
+  const colorNoise = (x: number, z: number): number => {
+    const rng = seededRandom(seed + 900);
+    const f1 = 2.5 + rng() * 1.5, p1 = rng() * Math.PI * 2;
+    const f2 = 5.0 + rng() * 2.0, p2 = rng() * Math.PI * 2;
+    const n1 = Math.sin(x * f1 + p1) * Math.cos(z * f1 + p1 + 0.7);
+    const n2 = Math.sin(x * f2 + p2) * Math.sin(z * f2 + p2) * 0.5;
+    return (n1 + n2 + 1.5) / 3.0; // 0-1 range
+  };
+
+  const pushVertColor = (x: number, z: number, y: number) => {
+    const noiseVal = colorNoise(x, z);
+    // Blend: low noise → dark (valleys), high noise → light (hilltops)
+    // Also factor in actual height for extra variation
+    const heightFactor = hilliness > 0.01 ? (y - yBase) / (hilliness * 0.8 + 0.01) : 0.5;
+    const blend = noiseVal * 0.6 + Math.min(heightFactor, 1) * 0.4;
+    const col = new THREE.Color();
+    if (blend < 0.5) {
+      col.lerpColors(darkCol, baseCol, blend * 2);
+    } else {
+      col.lerpColors(baseCol, lightCol, (blend - 0.5) * 2);
+    }
+    vertColors.push(col.r, col.g, col.b);
+  };
+
   // Center vertex
-  verts.push(0, yBase + terrainHeight(0, 0, hilliness, seed), 0);
+  const centerY = yBase + terrainHeight(0, 0, hilliness, seed);
+  verts.push(0, centerY, 0);
+  pushVertColor(0, 0, centerY);
 
   // Build concentric rings
   for (let ring = 1; ring <= numRings; ring++) {
     const t = ring / numRings;
     for (let v = 0; v < vertsPerRing; v++) {
       const angle = (v / vertsPerRing) * Math.PI * 2;
-      const maxR = hexRadiusAtAngle(angle);
+      const maxR = hexRadiusAtAngle(angle) * 0.97;
       const r = t * maxR;
       const x = Math.cos(angle) * r;
       const z = Math.sin(angle) * r;
       const y = yBase + terrainHeight(x, z, hilliness, seed);
       verts.push(x, y, z);
+      pushVertColor(x, z, y);
     }
   }
 
@@ -146,6 +160,7 @@ function createHexTopGeometry(seed: number, hilliness: number, yBase: number): T
 
   const geo = new THREE.BufferGeometry();
   geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(verts), 3));
+  geo.setAttribute('color', new THREE.BufferAttribute(new Float32Array(vertColors), 3));
   geo.setIndex(idxs);
   geo.computeVertexNormals();
   return geo;
@@ -158,8 +173,10 @@ function HexTile({ position, type, seed, children }: {
   children?: React.ReactNode;
 }) {
   const groupRef = useRef<THREE.Group>(null);
+  const terrainMatRef = useRef<THREE.MeshStandardMaterial>(null);
   const hovered = useRef(false);
   const liftY = useRef(0);
+  const glowIntensity = useRef(0);
 
   const rng = seededRandom(seed);
   const colors = TILE_COLORS[type];
@@ -175,10 +192,10 @@ function HexTile({ position, type, seed, children }: {
     : 0.15;
 
   // Single hex geometry with displaced top surface
-  // Displaced hex top surface
+  // Displaced hex top surface — now with vertex colors
   const topGeo = useMemo(
-    () => createHexTopGeometry(seed, hilliness, tileHeight / 2),
-    [seed, hilliness, tileHeight]
+    () => createHexTopGeometry(seed, hilliness, tileHeight / 2, type),
+    [seed, hilliness, tileHeight, type]
   );
 
   // Function to get terrain Y at any (x, z) — for placing decorations
@@ -192,41 +209,121 @@ function HexTile({ position, type, seed, children }: {
     if (!groupRef.current) return;
     const target = hovered.current ? 0.3 : 0;
     liftY.current += (target - liftY.current) * Math.min(delta * 8, 1);
-    groupRef.current.position.y = position[1] + liftY.current;
+    groupRef.current.position.y = liftY.current;
+
+    // Rim lighting glow on hover
+    if (terrainMatRef.current) {
+      const glowTarget = hovered.current ? 0.2 : 0;
+      glowIntensity.current += (glowTarget - glowIntensity.current) * Math.min(delta * 6, 1);
+      terrainMatRef.current.emissiveIntensity = glowIntensity.current;
+    }
   });
 
   return (
     <HexTileContext.Provider value={getTerrainY}>
-      <group
-        ref={groupRef}
-        position={position}
-      >
-        {/* Invisible hit area */}
+    <HexHoverContext.Provider value={hovered}>
+      <group position={position}>
+        {/* Static hit area — doesn't move with lift */}
         <mesh
           visible={false}
-          position={[0, 0.3, 0]}
           onPointerOver={(e) => { e.stopPropagation(); hovered.current = true; }}
           onPointerOut={(e) => { e.stopPropagation(); hovered.current = false; }}
         >
-          <cylinderGeometry args={[HEX_SIZE * 1.05, HEX_SIZE * 1.05, 1.5, 6]} />
+          <cylinderGeometry args={[HEX_SIZE, HEX_SIZE, tileHeight + 0.5, 6]} />
         </mesh>
-        {/* Hex walls — open-ended cylinder */}
+        {/* Visual group — lifts on hover */}
+        <group ref={groupRef}>
+        {/* Hex body — closed cylinder with brown border color, no gaps */}
         <mesh castShadow>
-          <cylinderGeometry args={[HEX_SIZE, HEX_SIZE, tileHeight, 6, 1, true]} />
-          <meshToonMaterial color={colors.base} side={THREE.DoubleSide} />
+          <cylinderGeometry args={[HEX_SIZE, HEX_SIZE, tileHeight, 6]} />
+          <meshToonMaterial color="#c4a06a" />
         </mesh>
-        {/* Bottom cap — flat hex, rotated to match cylinder walls */}
-        <mesh position={[0, -tileHeight / 2, 0]} rotation={[-Math.PI / 2, 0, Math.PI / 6]}>
-          <circleGeometry args={[HEX_SIZE, 6]} />
-          <meshToonMaterial color={colors.dark} />
+        {/* Top border — rendered just below terrain so terrain always covers it */}
+        <mesh position={[0, tileHeight / 2 - 0.003, 0]} rotation={[Math.PI / 2, 0, Math.PI / 6]} renderOrder={-1}>
+          <ringGeometry args={[HEX_SIZE * 0.65, HEX_SIZE * 1.02, 6, 1]} />
+          <meshToonMaterial color="#c4a06a" side={THREE.DoubleSide} depthWrite={false} />
         </mesh>
-        {/* Top surface — displaced terrain */}
+        {/* Top surface — displaced terrain with vertex colors */}
         <mesh geometry={topGeo} castShadow receiveShadow>
-          <meshStandardMaterial color={colors.base} roughness={0.85} />
+          <meshStandardMaterial
+            ref={terrainMatRef}
+            vertexColors
+            roughness={0.85}
+            emissive={colors.base}
+            emissiveIntensity={0}
+          />
         </mesh>
         {children}
+        </group>
       </group>
+    </HexHoverContext.Provider>
     </HexTileContext.Provider>
+  );
+}
+
+// ─── Number Token ───────────────────────────────────────────────
+
+function NumberToken({ number, position }: { number: number; position: [number, number, number] }) {
+  const hot = isHotNumber(number);
+  const dots = getNumberDots(number);
+  const textColor = hot ? '#cc0000' : '#2a2a2a';
+  const groupRef = useRef<THREE.Group>(null);
+  const chipMatRef = useRef<THREE.Mesh>(null);
+  const floatY = useRef(0);
+  const parentHovered = useHexHovered();
+
+  useFrame((_, delta) => {
+    if (!groupRef.current?.parent) return;
+    const parentY = groupRef.current.parent.position.y;
+    const target = position[1] + parentY * 1.5;
+    floatY.current += (target - floatY.current) * Math.min(delta * 4, 1);
+    groupRef.current.position.y = floatY.current;
+
+    // Yellow ring scale on hover
+    if (chipMatRef.current) {
+      const targetScale = parentHovered.current ? 1 : 0;
+      chipMatRef.current.scale.x += (targetScale - chipMatRef.current.scale.x) * Math.min(delta * 8, 1);
+      chipMatRef.current.scale.y += (targetScale - chipMatRef.current.scale.y) * Math.min(delta * 8, 1);
+    }
+  });
+
+  const chipH = 0.04;
+
+  return (
+    <group ref={groupRef} position={position}>
+      <Billboard follow lockX={false} lockY={false} lockZ={false}>
+        {/* Yellow glow ring — flat disc behind the chip */}
+        <mesh ref={chipMatRef} position={[0, 0, -chipH / 2 - 0.002]} scale={[0, 0, 1]}>
+          <circleGeometry args={[0.32, 32]} />
+          <meshBasicMaterial color="#f0c030" transparent opacity={0.7} side={THREE.DoubleSide} />
+        </mesh>
+        {/* Cardboard chip — facing camera via Billboard */}
+        <mesh position={[0, 0, 0]} rotation={[Math.PI / 2, 0, 0]} castShadow>
+          <cylinderGeometry args={[0.24, 0.25, chipH, 24]} />
+          <meshToonMaterial color="#c4a06a" />
+        </mesh>
+        {/* Number text — on front face */}
+        <Text
+          position={[0, 0.02, chipH / 2 + 0.005]}
+          fontSize={0.18}
+          color={textColor}
+          anchorX="center"
+          anchorY="middle"
+        >
+          {number.toString()}
+        </Text>
+        {/* Probability dots */}
+        {Array.from({ length: dots }, (_, i) => {
+          const dotX = (i - (dots - 1) / 2) * 0.05;
+          return (
+            <mesh key={i} position={[dotX, -0.1, chipH / 2 + 0.005]}>
+              <circleGeometry args={[0.015, 8]} />
+              <meshBasicMaterial color={textColor} />
+          </mesh>
+        );
+      })}
+      </Billboard>
+    </group>
   );
 }
 
@@ -387,7 +484,6 @@ function PineTree({ position, scale = 1, variant = 0 }: {
 // Dense wheat field — lots of stalks, no rocks
 function WheatField({ position, seed }: { position: [number, number, number]; seed: number }) {
   const ref = useRef<THREE.Group>(null);
-  const getY = useTerrainY();
   const rng = seededRandom(seed);
   const offset = rng() * Math.PI * 2;
 
@@ -420,9 +516,8 @@ function WheatField({ position, seed }: { position: [number, number, number]; se
       {stalks.map((s, i) => {
         const wx = position[0] + s.x;
         const wz = position[2] + s.z;
-        const y = getY(wx, wz);
         return (
-        <group key={i} position={[wx, y, wz]} rotation={[0, 0, s.lean]}>
+        <group key={i} position={[wx, 0, wz]} rotation={[0, 0, s.lean]}>
           <mesh position={[0, s.height / 2, 0]}>
             <cylinderGeometry args={[0.004, 0.005, s.height, 4]} />
             <meshToonMaterial color="#c9a227" />
@@ -432,9 +527,38 @@ function WheatField({ position, seed }: { position: [number, number, number]; se
             <meshToonMaterial color={s.color} />
           </mesh>
         </group>
-      ))}
+        );
+      })}
     </group>
   );
+}
+
+// Create a cone geometry with vertex color gradient: brown base → grey rock → white snow
+function createGradientConeGeo(radius: number, height: number, segments: number): THREE.BufferGeometry {
+  const geo = new THREE.ConeGeometry(radius, height, segments);
+  const pos = geo.attributes.position;
+  const colors = new Float32Array(pos.count * 3);
+  const brownBase = new THREE.Color('#6b4226');
+  const greyRock = new THREE.Color('#6b7b8d');
+  const whiteCap = new THREE.Color('#e8e8f0');
+  const tmpCol = new THREE.Color();
+  for (let i = 0; i < pos.count; i++) {
+    // ConeGeometry y goes from -height/2 (base) to +height/2 (tip)
+    const y = pos.getY(i);
+    const t = (y + height / 2) / height; // 0 = base, 1 = tip
+    if (t < 0.4) {
+      tmpCol.lerpColors(brownBase, greyRock, t / 0.4);
+    } else if (t < 0.75) {
+      tmpCol.lerpColors(greyRock, greyRock, 1);
+    } else {
+      tmpCol.lerpColors(greyRock, whiteCap, (t - 0.75) / 0.25);
+    }
+    colors[i * 3] = tmpCol.r;
+    colors[i * 3 + 1] = tmpCol.g;
+    colors[i * 3 + 2] = tmpCol.b;
+  }
+  geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+  return geo;
 }
 
 // Mountain range for ore tiles — big and imposing
@@ -444,27 +568,26 @@ function Mountain({ position, seed }: { position: [number, number, number]; seed
   const peaks = useMemo(() => {
     const r = seededRandom(seed + 300);
     return [
-      { x: 0, z: 0, h: 1.6 + r() * 0.5, w: 0.7, color: '#5c6b7a' },
-      { x: 0.4 + r() * 0.2, z: 0.2, h: 1.1 + r() * 0.4, w: 0.55, color: '#6b7b8d' },
-      { x: -0.35, z: -0.2 + r() * 0.15, h: 0.9 + r() * 0.3, w: 0.5, color: '#7a8a9c' },
-      { x: 0.15, z: -0.35, h: 0.7 + r() * 0.3, w: 0.4, color: '#5c6b7a' },
-      { x: -0.15, z: 0.3, h: 0.6 + r() * 0.25, w: 0.35, color: '#6b7b8d' },
+      { x: 0, z: 0, h: 1.6 + r() * 0.5, w: 0.7 },
+      { x: 0.4 + r() * 0.2, z: 0.2, h: 1.1 + r() * 0.4, w: 0.55 },
+      { x: -0.35, z: -0.2 + r() * 0.15, h: 0.9 + r() * 0.3, w: 0.5 },
+      { x: 0.15, z: -0.35, h: 0.7 + r() * 0.3, w: 0.4 },
+      { x: -0.15, z: 0.3, h: 0.6 + r() * 0.25, w: 0.35 },
     ];
   }, [seed]);
+
+  const peakGeos = useMemo(
+    () => peaks.map((p) => createGradientConeGeo(p.w, p.h, 6)),
+    [peaks]
+  );
 
   return (
     <group position={position} scale={0.55}>
       {peaks.map((p, i) => (
         <group key={i} position={[p.x, 0, p.z]}>
-          {/* Mountain body */}
-          <mesh position={[0, p.h * 0.4, 0]} castShadow>
-            <coneGeometry args={[p.w, p.h, 6]} />
-            <meshToonMaterial color={p.color} />
-          </mesh>
-          {/* Snow cap */}
-          <mesh position={[0, p.h * 0.75, 0]} castShadow>
-            <coneGeometry args={[p.w * 0.35, p.h * 0.3, 6]} />
-            <meshToonMaterial color="#e8e8f0" />
+          {/* Mountain body with gradient vertex colors */}
+          <mesh geometry={peakGeos[i]} position={[0, p.h * 0.4, 0]} castShadow>
+            <meshStandardMaterial vertexColors roughness={0.9} />
           </mesh>
         </group>
       ))}
@@ -621,15 +744,113 @@ function GrassCoverage({ seed }: { seed: number }) {
   );
 }
 
+// ─── Animated water tile — Y oscillation + color cycling ────────
+
+function AnimatedWaterTile({ position, seed }: { position: [number, number, number]; seed: number }) {
+  const meshRef = useRef<THREE.Mesh>(null);
+  const matRef = useRef<THREE.MeshToonMaterial>(null);
+  const rng = seededRandom(seed);
+  const speed = 0.6 + rng() * 0.3;
+  const phase = rng() * Math.PI * 2;
+  const colorA = useMemo(() => new THREE.Color('#2980b9'), []);
+  const colorB = useMemo(() => new THREE.Color('#1a5276'), []);
+  const colorC = useMemo(() => new THREE.Color('#5dade2'), []);
+  const tmpColor = useMemo(() => new THREE.Color(), []);
+
+  useFrame((state) => {
+    if (!meshRef.current || !matRef.current) return;
+    const t = state.clock.elapsedTime;
+    // Y oscillation
+    meshRef.current.position.y = position[1] + Math.sin(t * speed + phase) * 0.04;
+    // Color cycling between blue tones
+    const cycle = (Math.sin(t * 0.25 + phase) + 1) / 2; // 0-1
+    if (cycle < 0.5) {
+      tmpColor.lerpColors(colorA, colorB, cycle * 2);
+    } else {
+      tmpColor.lerpColors(colorB, colorC, (cycle - 0.5) * 2);
+    }
+    matRef.current.color.copy(tmpColor);
+  });
+
+  return (
+    <group>
+      <mesh ref={meshRef} position={position}>
+        <cylinderGeometry args={[HEX_SIZE, HEX_SIZE * 1.02, 0.12, 6]} />
+        <meshToonMaterial ref={matRef} color="#2980b9" transparent opacity={0.55} />
+      </mesh>
+      {/* Wave highlights */}
+      <Float speed={speed} floatIntensity={0.03} rotationIntensity={0}>
+        <mesh position={[position[0] + (rng() - 0.5) * 0.4, position[1] + 0.07, position[2] + (rng() - 0.5) * 0.3]}>
+          <boxGeometry args={[0.3, 0.01, 0.06]} />
+          <meshToonMaterial color="#5dade2" transparent opacity={0.4} />
+        </mesh>
+      </Float>
+    </group>
+  );
+}
+
+// ─── Floating pollen/dust motes over wheat tiles ────────────────
+
+function PollenMotes({ seed }: { seed: number }) {
+  const groupRef = useRef<THREE.Group>(null);
+  const getY = useTerrainY();
+
+  const motes = useMemo(() => {
+    const rng = seededRandom(seed + 700);
+    return Array.from({ length: 12 }, () => ({
+      x: (rng() - 0.5) * 1.2,
+      z: (rng() - 0.5) * 1.2,
+      phase: rng() * Math.PI * 2,
+      speed: 0.15 + rng() * 0.25,
+      driftX: (rng() - 0.5) * 0.3,
+      driftZ: (rng() - 0.5) * 0.3,
+      size: 0.008 + rng() * 0.008,
+    }));
+  }, [seed]);
+
+  useFrame((state) => {
+    if (!groupRef.current) return;
+    const t = state.clock.elapsedTime;
+    const children = groupRef.current.children;
+    for (let i = 0; i < motes.length; i++) {
+      const m = motes[i];
+      const child = children[i] as THREE.Mesh;
+      if (!child) continue;
+      // Drift upward, wrapping back down
+      const cycleY = ((t * m.speed + m.phase) % 3) / 3; // 0-1 cycle over ~3 sec
+      const baseY = getY(m.x, m.z);
+      child.position.x = m.x + Math.sin(t * 0.4 + m.phase) * m.driftX;
+      child.position.z = m.z + Math.cos(t * 0.3 + m.phase) * m.driftZ;
+      child.position.y = baseY + cycleY * 0.5;
+      // Fade out near top of drift
+      const mat = child.material as THREE.MeshToonMaterial;
+      mat.opacity = cycleY < 0.8 ? 0.6 : 0.6 * (1 - (cycleY - 0.8) / 0.2);
+    }
+  });
+
+  return (
+    <group ref={groupRef}>
+      {motes.map((m, i) => (
+        <mesh key={i} position={[m.x, getY(m.x, m.z), m.z]}>
+          <sphereGeometry args={[m.size, 4, 4]} />
+          <meshToonMaterial color="#f5e6a0" transparent opacity={0.6} />
+        </mesh>
+      ))}
+    </group>
+  );
+}
+
 // ─── Board scene ────────────────────────────────────────────────
 
-function BoardScene() {
+function BoardScene({ board }: { board: BoardDefinition }) {
   const boardRef = useRef<THREE.Group>(null);
+  const landTiles = board.tiles.filter(t => t.type !== 'water');
+  const waterRings = board.waterRings ?? 3;
 
   return (
     <group ref={boardRef}>
       {/* Hex tiles with decorations as children */}
-      {BOARD.map((tile, i) => {
+      {landTiles.map((tile, i) => {
         const [wx, wz] = axialToWorld(tile.q, tile.r);
         const tileSeed = i * 137 + 42;
         const rng = seededRandom(tileSeed);
@@ -685,6 +906,7 @@ function BoardScene() {
                     </OnTerrain>
                   );
                 })}
+                <PollenMotes seed={tileSeed} />
               </>
             )}
             {tile.type === 'ore' && (
@@ -700,43 +922,41 @@ function BoardScene() {
                 <OnTerrain x={0.0} z={-0.3}><Cactus position={[0, 0, 0]} seed={tileSeed + 99} /></OnTerrain>
               </>
             )}
+            {tile.number != null && (
+              <NumberToken number={tile.number} position={[0, 1.0, 0]} />
+            )}
           </HexTile>
         );
       })}
 
-      {/* Water ring — ring 3 */}
+      {/* Water rings — rings 3, 4, 5 for expansive ocean */}
       {(() => {
-        const waterTiles: [number, number][] = [];
         const dirs: [number, number][] = [
           [1, 0], [0, 1], [-1, 1], [-1, 0], [0, -1], [1, -1],
         ];
-        let q = 3, r = 0;
-        for (let side = 0; side < 6; side++) {
-          for (let step = 0; step < 3; step++) {
-            waterTiles.push([q, r]);
-            q += dirs[(side + 2) % 6][0];
-            r += dirs[(side + 2) % 6][1];
+        const allWater: JSX.Element[] = [];
+        for (let ring = waterRings; ring <= waterRings + 2; ring++) {
+          const waterTiles: [number, number][] = [];
+          let q = ring, r = 0;
+          for (let side = 0; side < 6; side++) {
+            for (let step = 0; step < ring; step++) {
+              waterTiles.push([q, r]);
+              q += dirs[(side + 2) % 6][0];
+              r += dirs[(side + 2) % 6][1];
+            }
           }
+          waterTiles.forEach(([wq, wr], i) => {
+            const [wx, wz] = axialToWorld(wq, wr);
+            allWater.push(
+              <AnimatedWaterTile
+                key={`water-${ring}-${i}`}
+                position={[wx, -0.05, wz]}
+                seed={ring * 100 + i * 73 + 999}
+              />
+            );
+          });
         }
-        return waterTiles.map(([wq, wr], i) => {
-          const [wx, wz] = axialToWorld(wq, wr);
-          const rng = seededRandom(i * 73 + 999);
-          return (
-            <Float key={`water-${i}`} speed={1.2 + rng() * 0.6} floatIntensity={0.04} rotationIntensity={0}>
-              <group position={[wx, -0.05, wz]}>
-                <mesh>
-                  <cylinderGeometry args={[HEX_SIZE, HEX_SIZE * 1.02, 0.12, 6]} />
-                  <meshToonMaterial color={rng() > 0.5 ? '#2980b9' : '#2471a3'} transparent opacity={0.55} />
-                </mesh>
-                {/* Wave highlights */}
-                <mesh position={[(rng() - 0.5) * 0.4, 0.07, (rng() - 0.5) * 0.3]}>
-                  <boxGeometry args={[0.3, 0.01, 0.06]} />
-                  <meshToonMaterial color="#5dade2" transparent opacity={0.4} />
-                </mesh>
-              </group>
-            </Float>
-          );
-        });
+        return allWater;
       })()}
 
     </group>
@@ -745,14 +965,29 @@ function BoardScene() {
 
 // ─── Main export ────────────────────────────────────────────────
 
-export default function CatanBoard3D({ interactive = false }: { interactive?: boolean }) {
+// Slow auto-rotation wrapper for background mode
+function SlowSpin({ children }: { children: React.ReactNode }) {
+  const ref = useRef<THREE.Group>(null);
+  useFrame((state) => {
+    if (!ref.current) return;
+    ref.current.rotation.y = state.clock.elapsedTime * 0.04;
+  });
+  return <group ref={ref}>{children}</group>;
+}
+
+export default function CatanBoard3D({ interactive = false, board = STANDARD_BOARD }: { interactive?: boolean; board?: BoardDefinition }) {
+  // Background mode: pull camera back and up to show the full board
+  const bgCamera = { position: [0, 14, 7] as [number, number, number], fov: 35 };
+  const interactiveCamera = { position: [0, 12, 5] as [number, number, number], fov: 30 };
+  const cam = interactive ? interactiveCamera : bgCamera;
+
   return (
     <div className={interactive ? 'catan-3d-interactive' : 'catan-3d-bg'}>
       <Canvas
         shadows
         gl={{ antialias: true, alpha: true }}
-        camera={{ position: [0, 12, 5], fov: 30 }}
-        style={{ background: interactive ? '#1a0f0a' : 'transparent' }}
+        camera={{ position: cam.position, fov: cam.fov }}
+        style={{ background: interactive ? '#87CEEB' : 'transparent' }}
       >
         {interactive && (
           <OrbitControls
@@ -777,12 +1012,18 @@ export default function CatanBoard3D({ interactive = false }: { interactive?: bo
 
         <Environment preset="sunset" environmentIntensity={0.3} />
 
-        <BoardScene />
+        {interactive ? (
+          <BoardScene board={board} />
+        ) : (
+          <SlowSpin>
+            <BoardScene board={board} />
+          </SlowSpin>
+        )}
 
-        {/* Ground */}
+        {/* Ocean floor */}
         <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.2, 0]} receiveShadow>
-          <planeGeometry args={[40, 40]} />
-          <meshToonMaterial color="#1a0f0a" />
+          <planeGeometry args={[80, 80]} />
+          <meshStandardMaterial color="#1a6b8a" roughness={0.3} />
         </mesh>
       </Canvas>
       {!interactive && <div className="catan-3d-overlay" />}

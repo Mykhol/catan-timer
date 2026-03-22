@@ -1,16 +1,20 @@
 import { useState } from 'react';
 import type { Player } from './types';
+import type { BoardDefinition } from './lib/boardTypes';
 import { createGame } from './lib/supabase';
+import { STANDARD_BOARD } from './lib/boardLayouts';
 import SetupScreen from './components/SetupScreen';
 import TimerScreen from './components/TimerScreen';
 import LobbyScreen from './components/LobbyScreen';
 import DisplayScreen from './components/DisplayScreen';
 import ControllerScreen from './components/ControllerScreen';
+import BoardGeneratorScreen from './components/BoardGeneratorScreen';
 import CatanBoard3D from './components/CatanBoard3D';
 import './index.css';
 
 type Screen =
   | { type: 'lobby' }
+  | { type: 'board-generator' }
   | { type: 'local-setup' }
   | { type: 'local-game'; players: Player[]; turnTime: number }
   | { type: 'host-setup' }
@@ -43,6 +47,7 @@ function syncUrl(screen: Screen) {
 
 function App() {
   const [screen, setScreen] = useState<Screen>(getInitialScreen);
+  const [board, setBoard] = useState<BoardDefinition>(STANDARD_BOARD);
 
   // Standalone board preview at /board — interactive 3D scene
   if (window.location.pathname === '/board') {
@@ -66,7 +71,7 @@ function App() {
 
   return (
     <>
-      <CatanBoard3D />
+      <CatanBoard3D board={board} />
       {screen.type === 'lobby' && (
         <LobbyScreen
           onAction={(action) => {
@@ -80,8 +85,19 @@ function App() {
               case 'join':
                 navigate({ type: 'controller', gameCode: action.gameCode });
                 break;
+              case 'generate-board':
+                navigate({ type: 'board-generator' });
+                break;
             }
           }}
+        />
+      )}
+      {screen.type === 'board-generator' && (
+        <BoardGeneratorScreen
+          currentBoard={board}
+          onSelectBoard={setBoard}
+          onContinue={() => navigate({ type: 'local-setup' })}
+          onBack={() => navigate({ type: 'lobby' })}
         />
       )}
       {screen.type === 'local-setup' && (
