@@ -6,7 +6,7 @@ import TimerScreen from './components/TimerScreen';
 import LobbyScreen from './components/LobbyScreen';
 import DisplayScreen from './components/DisplayScreen';
 import ControllerScreen from './components/ControllerScreen';
-import CatanBackground from './components/CatanBackground';
+import CatanBoard3D from './components/CatanBoard3D';
 import './index.css';
 
 type Screen =
@@ -44,6 +44,11 @@ function syncUrl(screen: Screen) {
 function App() {
   const [screen, setScreen] = useState<Screen>(getInitialScreen);
 
+  // Standalone board preview at /board — interactive 3D scene
+  if (window.location.pathname === '/board') {
+    return <CatanBoard3D interactive />;
+  }
+
   const navigate = (next: Screen) => {
     setScreen(next);
     syncUrl(next);
@@ -61,7 +66,7 @@ function App() {
 
   return (
     <>
-      <CatanBackground />
+      <CatanBoard3D />
       {screen.type === 'lobby' && (
         <LobbyScreen
           onAction={(action) => {

@@ -59,6 +59,48 @@ body {
   pointer-events: none;
 }
 
+.spline-bg {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  z-index: -1;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.spline-bg canvas {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.spline-bg-overlay {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background:
+    radial-gradient(ellipse at 50% 50%, rgba(26, 15, 10, 0.3) 0%, rgba(26, 15, 10, 0.7) 60%, rgba(26, 15, 10, 0.9) 100%);
+  pointer-events: none;
+}
+
+.catan-3d-bg {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  z-index: -1;
+  pointer-events: none;
+}
+
+.catan-3d-interactive {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  z-index: 0;
+}
+
+.catan-3d-overlay {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background:
+    radial-gradient(ellipse at 50% 40%, rgba(26, 15, 10, 0.25) 0%, rgba(26, 15, 10, 0.65) 50%, rgba(26, 15, 10, 0.92) 100%);
+  pointer-events: none;
+}
+
 /* Hex tiles (static) */
 .hex-tile {
   transform-origin: center;
