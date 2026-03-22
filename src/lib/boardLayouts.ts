@@ -387,23 +387,42 @@ export function randomStandardBoard(options: RandomBoardOptions = {}): BoardDefi
 export function shuffleBoard(board: BoardDefinition, options: RandomBoardOptions = {}): BoardDefinition {
   const fairness = options.fairness ?? DEFAULT_FAIRNESS;
   const maxAttempts = options.maxAttempts ?? 200;
+  const canShuffleResources = board.variableSetup?.resources ?? false;
+  const canShuffleNumbers = board.variableSetup?.numbers ?? false;
 
-  // Collect all number tokens from non-desert/water/fog tiles
+  // Collect shuffleable resource types (non-desert/water/fog)
+  const resourceIndices: number[] = [];
+  const resources: BoardTile['type'][] = [];
+  // Collect number tokens
   const numberedIndices: number[] = [];
   const numbers: number[] = [];
+
   board.tiles.forEach((tile, i) => {
-    if (tile.number != null) {
+    if (canShuffleResources && tile.type !== 'desert' && tile.type !== 'water' && tile.type !== 'fog') {
+      resourceIndices.push(i);
+      resources.push(tile.type);
+    }
+    if (canShuffleNumbers && tile.number != null) {
       numberedIndices.push(i);
       numbers.push(tile.number);
     }
   });
 
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
-    const shuffledNumbers = shuffle([...numbers]);
+    const shuffledResources = canShuffleResources ? shuffle([...resources]) : resources;
+    const shuffledNumbers = canShuffleNumbers ? shuffle([...numbers]) : numbers;
+
     const newTiles = board.tiles.map((tile, i) => {
+      const newTile = { ...tile };
+      const ri = resourceIndices.indexOf(i);
+      if (ri !== -1 && canShuffleResources) {
+        newTile.type = shuffledResources[ri];
+      }
       const ni = numberedIndices.indexOf(i);
-      if (ni === -1) return { ...tile };
-      return { ...tile, number: shuffledNumbers[ni] };
+      if (ni !== -1 && canShuffleNumbers) {
+        newTile.number = shuffledNumbers[ni];
+      }
+      return newTile;
     });
 
     if (isFairBoard(newTiles, fairness)) {
@@ -411,12 +430,20 @@ export function shuffleBoard(board: BoardDefinition, options: RandomBoardOptions
     }
   }
 
-  // Fallback — return a shuffled version even if not perfectly fair
-  const shuffledNumbers = shuffle([...numbers]);
+  // Fallback
+  const shuffledResources = canShuffleResources ? shuffle([...resources]) : resources;
+  const shuffledNumbers = canShuffleNumbers ? shuffle([...numbers]) : numbers;
   const newTiles = board.tiles.map((tile, i) => {
+    const newTile = { ...tile };
+    const ri = resourceIndices.indexOf(i);
+    if (ri !== -1 && canShuffleResources) {
+      newTile.type = shuffledResources[ri];
+    }
     const ni = numberedIndices.indexOf(i);
-    if (ni === -1) return { ...tile };
-    return { ...tile, number: shuffledNumbers[ni] };
+    if (ni !== -1 && canShuffleNumbers) {
+      newTile.number = shuffledNumbers[ni];
+    }
+    return newTile;
   });
   return { ...board, name: board.name, tiles: newTiles };
 }

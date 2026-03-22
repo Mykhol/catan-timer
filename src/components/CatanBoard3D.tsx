@@ -845,14 +845,42 @@ function PollenMotes({ seed }: { seed: number }) {
 function BoardScene({ board }: { board: BoardDefinition }) {
   const boardRef = useRef<THREE.Group>(null);
   const landTiles = board.tiles.filter(t => t.type !== 'water');
-  const inlineWaterTiles = board.tiles.filter(t => t.type === 'water');
   const waterRings = board.waterRings ?? 3;
 
-  // Compute board extent for camera framing
-  const maxDist = Math.max(...board.tiles.map(t => {
-    const [x, z] = axialToWorld(t.q, t.r);
-    return Math.sqrt(x * x + z * z);
-  }), 5);
+  // Find all occupied positions
+  const occupied = useMemo(() => {
+    const set = new Set<string>();
+    board.tiles.forEach(t => set.add(`${t.q},${t.r}`));
+    return set;
+  }, [board]);
+
+  // Compute max ring from tile positions
+  const maxRing = useMemo(() => {
+    let mr = 0;
+    board.tiles.forEach(t => {
+      const d = Math.max(Math.abs(t.q), Math.abs(t.r), Math.abs(-t.q - t.r));
+      if (d > mr) mr = d;
+    });
+    return mr;
+  }, [board]);
+
+  // Fill all empty positions within the board extent with water
+  const fillWaterTiles = useMemo(() => {
+    const tiles: [number, number][] = [];
+    for (let q = -maxRing; q <= maxRing; q++) {
+      for (let r = -maxRing; r <= maxRing; r++) {
+        const s = -q - r;
+        if (Math.max(Math.abs(q), Math.abs(r), Math.abs(s)) > maxRing) continue;
+        if (!occupied.has(`${q},${r}`)) {
+          tiles.push([q, r]);
+        }
+      }
+    }
+    return tiles;
+  }, [maxRing, occupied]);
+
+  // Also include explicitly defined water tiles
+  const explicitWater = board.tiles.filter(t => t.type === 'water');
 
   return (
     <group ref={boardRef}>
@@ -936,14 +964,26 @@ function BoardScene({ board }: { board: BoardDefinition }) {
         );
       })}
 
-      {/* Inline water tiles (between islands in Seafarers) */}
-      {inlineWaterTiles.map((tile, i) => {
+      {/* Fill water — all empty positions within the board */}
+      {fillWaterTiles.map(([wq, wr], i) => {
+        const [wx, wz] = axialToWorld(wq, wr);
+        return (
+          <AnimatedWaterTile
+            key={`fill-water-${i}`}
+            position={[wx, -0.05, wz]}
+            seed={i * 73 + 500}
+          />
+        );
+      })}
+
+      {/* Explicit water tiles from board definition */}
+      {explicitWater.map((tile, i) => {
         const [wx, wz] = axialToWorld(tile.q, tile.r);
         return (
           <AnimatedWaterTile
-            key={`inline-water-${i}`}
+            key={`explicit-water-${i}`}
             position={[wx, -0.05, wz]}
-            seed={i * 73 + 500}
+            seed={i * 73 + 700}
           />
         );
       })}
@@ -994,6 +1034,20 @@ function SlowSpin({ children }: { children: React.ReactNode }) {
   return <group ref={ref}>{children}</group>;
 }
 
+// Smoothly moves camera to frame the board
+function AutoFrameCamera({ distance, interactive }: { distance: number; interactive: boolean }) {
+  useFrame((state) => {
+    const cam = state.camera;
+    const targetY = interactive ? distance * 0.85 : distance;
+    const targetZ = interactive ? distance * 0.35 : distance * 0.4;
+    cam.position.x += (0 - cam.position.x) * 0.02;
+    cam.position.y += (targetY - cam.position.y) * 0.02;
+    cam.position.z += (targetZ - cam.position.z) * 0.02;
+    cam.lookAt(0, 0, 0);
+  });
+  return null;
+}
+
 export default function CatanBoard3D({ interactive = false, spinning = true, dimOverlay = true, board = STANDARD_BOARD }: { interactive?: boolean; spinning?: boolean; dimOverlay?: boolean; board?: BoardDefinition }) {
   // Background mode: pull camera back and up to show the full board
   // Auto-frame camera based on board extent
@@ -1007,7 +1061,7 @@ export default function CatanBoard3D({ interactive = false, spinning = true, dim
     return maxD;
   }, [board]);
 
-  const camDist = boardExtent * 1.8 + 4;
+  const camDist = boardExtent * 2.5 + 5;
   const bgCamera = { position: [0, camDist, camDist * 0.4] as [number, number, number], fov: 35 };
   const interactiveCamera = { position: [0, camDist * 0.85, camDist * 0.35] as [number, number, number], fov: 30 };
   const cam = interactive ? interactiveCamera : bgCamera;
@@ -1030,6 +1084,8 @@ export default function CatanBoard3D({ interactive = false, spinning = true, dim
             maxPolarAngle={Math.PI / 2.2}
           />
         )}
+
+        {!interactive && <AutoFrameCamera distance={camDist} interactive={false} />}
 
         <ambientLight intensity={0.5} />
         <directionalLight
