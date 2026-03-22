@@ -85,7 +85,8 @@ function App() {
       navigate({ type: 'display', gameCode: game.game_code });
     } catch (err) {
       console.error('Failed to create game:', err);
-      alert('Failed to create game. Check your Supabase configuration.');
+      const msg = err instanceof Error ? err.message : 'Unknown error';
+      alert(`Failed to create game: ${msg}`);
     }
   };
 

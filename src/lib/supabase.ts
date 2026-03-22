@@ -28,29 +28,37 @@ export async function createGame(
 
   for (let attempt = 0; attempt < 5; attempt++) {
     const gameCode = generateGameCode();
-    const { data, error } = await supabase
-      .from('games')
-      .insert({
-        game_code: gameCode,
-        players,
-        turn_time: turnTime,
-        current_player_index: 0,
-        turn_number: 1,
-        timer_state: 'idle',
-        timer_remaining: turnTime,
-        timer_started_at: null,
-        music_playing: true,
-        ...(boardLayout ? { board_layout: boardLayout } : {}),
-      })
-      .select()
-      .single();
+    try {
+      const { data, error } = await supabase
+        .from('games')
+        .insert({
+          game_code: gameCode,
+          players,
+          turn_time: turnTime,
+          current_player_index: 0,
+          turn_number: 1,
+          timer_state: 'idle',
+          timer_remaining: turnTime,
+          music_playing: true,
+          ...(boardLayout ? { board_layout: boardLayout } : {}),
+        })
+        .select()
+        .single();
 
-    if (error) {
-      // Unique constraint violation — retry with new code
-      if (error.code === '23505') continue;
-      throw error;
+      if (error) {
+        // Unique constraint violation — retry with new code
+        if (error.code === '23505') continue;
+        throw error;
+      }
+      return data as GameRow;
+    } catch (err) {
+      // Network error — retry after a brief delay
+      if (attempt < 4) {
+        await new Promise(r => setTimeout(r, 500));
+        continue;
+      }
+      throw err;
     }
-    return data as GameRow;
   }
   throw new Error('Failed to generate unique game code');
 }
