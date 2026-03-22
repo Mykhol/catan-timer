@@ -1,7 +1,7 @@
 // Background music player — Medieval Fantasy Tavern ambience
-// Source: public/tavern-music.mp3
 
 let audio: HTMLAudioElement | null = null;
+let pendingPlay = false;
 
 function getAudio(): HTMLAudioElement {
   if (!audio) {
@@ -12,15 +12,33 @@ function getAudio(): HTMLAudioElement {
   return audio;
 }
 
+// Retry playing on first user interaction if autoplay was blocked
+function setupAutoplayRetry() {
+  const tryPlay = () => {
+    if (pendingPlay && audio) {
+      audio.play().then(() => {
+        pendingPlay = false;
+      }).catch(() => {});
+    }
+    document.removeEventListener('click', tryPlay);
+    document.removeEventListener('touchstart', tryPlay);
+  };
+  document.addEventListener('click', tryPlay, { once: true });
+  document.addEventListener('touchstart', tryPlay, { once: true });
+}
+
 export function startMusic() {
   const el = getAudio();
   if (!el.paused) return;
   el.play().catch(() => {
-    // Browser blocked autoplay — will work after user interaction
+    // Autoplay blocked — retry on next user interaction
+    pendingPlay = true;
+    setupAutoplayRetry();
   });
 }
 
 export function stopMusic() {
+  pendingPlay = false;
   if (!audio) return;
   audio.pause();
   audio.currentTime = 0;

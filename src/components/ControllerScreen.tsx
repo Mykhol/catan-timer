@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import { useGameSync } from '../hooks/useGameSync';
 import { useSyncedTimer } from '../hooks/useSyncedTimer';
 import { useElapsedTime } from '../hooks/useElapsedTime';
@@ -18,7 +18,17 @@ export default function ControllerScreen({ gameCode, onBack }: ControllerScreenP
   const timeLeft = useSyncedTimer(gameState);
   const gameElapsed = useElapsedTime(gameState?.game_started_at);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [localVol, setLocalVol] = useState(gameState?.music_volume ?? 30);
+  const volTimerRef = useRef<number | null>(null);
   useWakeLock();
+
+  const handleVolume = useCallback((val: number) => {
+    setLocalVol(val);
+    if (volTimerRef.current) clearTimeout(volTimerRef.current);
+    volTimerRef.current = window.setTimeout(() => {
+      actions.setVolume(val);
+    }, 500);
+  }, [actions]);
 
   if (error) {
     return (
@@ -96,8 +106,8 @@ export default function ControllerScreen({ gameCode, onBack }: ControllerScreenP
                   type="range"
                   min="0"
                   max="100"
-                  value={gameState.music_volume ?? 30}
-                  onChange={(e) => actions.setVolume(Number(e.target.value))}
+                  value={localVol}
+                  onChange={(e) => handleVolume(Number(e.target.value))}
                   className="volume-slider"
                 />
               </div>

@@ -777,13 +777,6 @@ function AnimatedWaterTile({ position, seed }: { position: [number, number, numb
         <cylinderGeometry args={[HEX_SIZE, HEX_SIZE * 1.02, 0.12, 6]} />
         <meshToonMaterial ref={matRef} color="#2980b9" transparent opacity={0.55} />
       </mesh>
-      {/* Wave highlights */}
-      <Float speed={speed} floatIntensity={0.03} rotationIntensity={0}>
-        <mesh position={[position[0] + (rng() - 0.5) * 0.4, position[1] + 0.07, position[2] + (rng() - 0.5) * 0.3]}>
-          <boxGeometry args={[0.3, 0.01, 0.06]} />
-          <meshToonMaterial color="#5dade2" transparent opacity={0.4} />
-        </mesh>
-      </Float>
     </group>
   );
 }
@@ -1038,8 +1031,8 @@ function SlowSpin({ children }: { children: React.ReactNode }) {
 function AutoFrameCamera({ distance, interactive }: { distance: number; interactive: boolean }) {
   useFrame((state) => {
     const cam = state.camera;
-    const targetY = interactive ? distance * 0.85 : distance;
-    const targetZ = interactive ? distance * 0.35 : distance * 0.4;
+    const targetY = interactive ? distance * 0.85 : distance * 0.6;
+    const targetZ = interactive ? distance * 0.35 : distance * 0.7;
     cam.position.x += (0 - cam.position.x) * 0.02;
     cam.position.y += (targetY - cam.position.y) * 0.02;
     cam.position.z += (targetZ - cam.position.z) * 0.02;
@@ -1062,7 +1055,7 @@ export default function CatanBoard3D({ interactive = false, spinning = true, dim
   }, [board]);
 
   const camDist = boardExtent * 2.5 + 5;
-  const bgCamera = { position: [0, camDist, camDist * 0.4] as [number, number, number], fov: 35 };
+  const bgCamera = { position: [0, camDist * 0.6, camDist * 0.7] as [number, number, number], fov: 35 };
   const interactiveCamera = { position: [0, camDist * 0.85, camDist * 0.35] as [number, number, number], fov: 30 };
   const cam = interactive ? interactiveCamera : bgCamera;
 
