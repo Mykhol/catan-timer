@@ -2,7 +2,7 @@ import { useRef, useMemo, createContext, useContext } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { Float, Environment, OrbitControls, Text, Billboard } from '@react-three/drei';
 import * as THREE from 'three';
-import type { BoardDefinition, BoardTile, TileType } from '../lib/boardTypes';
+import type { BoardDefinition, TileType } from '../lib/boardTypes';
 import { TILE_COLORS, isHotNumber, getNumberDots } from '../lib/boardTypes';
 import { STANDARD_BOARD } from '../lib/boardLayouts';
 
@@ -178,7 +178,6 @@ function HexTile({ position, type, seed, children }: {
   const liftY = useRef(0);
   const glowIntensity = useRef(0);
 
-  const rng = seededRandom(seed);
   const colors = TILE_COLORS[type];
   const tileHeight = 0.25;
 
@@ -993,7 +992,7 @@ function BoardScene({ board }: { board: BoardDefinition }) {
         const dirs: [number, number][] = [
           [1, 0], [0, 1], [-1, 1], [-1, 0], [0, -1], [1, -1],
         ];
-        const allWater: JSX.Element[] = [];
+        const allWater: React.ReactElement[] = [];
         for (let ring = waterRings; ring <= waterRings + 2; ring++) {
           const waterTiles: [number, number][] = [];
           let q = ring, r = 0;
