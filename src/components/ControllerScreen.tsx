@@ -47,9 +47,9 @@ export default function ControllerScreen({ gameCode, onBack }: ControllerScreenP
 
   const currentPlayer = gameState.players[gameState.current_player_index];
   const currentColor = playerColors[gameState.current_player_index % playerColors.length];
-  const isCompleted = gameState.timer_state === 'completed' || (timeLeft === 0 && gameState.timer_state === 'running');
+  const isCompleted = gameState.timer_state === 'completed';
   const isIdle = gameState.timer_state === 'idle';
-  const isRunning = gameState.timer_state === 'running' && timeLeft > 0;
+  const isRunning = gameState.timer_state === 'running';
   const isPaused = gameState.timer_state === 'paused';
 
   const displayTime = timeLeft >= 0 ? timeLeft : gameState.timer_remaining;
