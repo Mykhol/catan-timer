@@ -180,6 +180,7 @@ export default function DisplayScreen({ gameCode, onBack }: DisplayScreenProps) 
         <div className="top-bar-left">
           <button className="back-button" onClick={onBack}>&#x2190; Lobby</button>
           <button className="back-button end-game-btn" onClick={() => actions.endGame()}>End Game</button>
+          <button className="back-button" onClick={() => window.open(`/board?game=${gameCode}`, '_blank')}>Board</button>
         </div>
         <div className="game-code-group">
           <span className="game-code-badge">{gameCode}</span>

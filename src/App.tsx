@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { Player } from './types';
 import type { BoardDefinition } from './lib/boardTypes';
-import { createGame } from './lib/supabase';
+import { createGame, fetchGameByCode } from './lib/supabase';
 import { STANDARD_BOARD } from './lib/boardLayouts';
 import SetupScreen from './components/SetupScreen';
 import LobbyScreen from './components/LobbyScreen';
@@ -42,13 +42,36 @@ function syncUrl(screen: Screen) {
   window.history.replaceState({}, '', url.toString());
 }
 
+function BoardExplorer() {
+  const [board, setBoard] = useState<BoardDefinition>(STANDARD_BOARD);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const gameCode = params.get('game');
+    if (gameCode) {
+      fetchGameByCode(gameCode).then((game) => {
+        if (game?.board_layout) {
+          setBoard(game.board_layout);
+        }
+        setLoading(false);
+      }).catch(() => setLoading(false));
+    } else {
+      setLoading(false);
+    }
+  }, []);
+
+  if (loading) return null;
+  return <CatanBoard3D interactive board={board} />;
+}
+
 function App() {
   const [screen, setScreen] = useState<Screen>(getInitialScreen);
   const [board, setBoard] = useState<BoardDefinition>(STANDARD_BOARD);
 
   // Standalone board preview at /board — interactive 3D scene
   if (window.location.pathname === '/board') {
-    return <CatanBoard3D interactive />;
+    return <BoardExplorer />;
   }
 
   const navigate = (next: Screen) => {

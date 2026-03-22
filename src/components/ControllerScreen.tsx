@@ -199,6 +199,13 @@ export default function ControllerScreen({ gameCode, onBack }: ControllerScreenP
       </div>
 
       <button
+        className="controller-btn controller-music"
+        onClick={() => window.open(`/board?game=${gameCode}`, '_blank')}
+      >
+        Explore Board
+      </button>
+
+      <button
         className="controller-btn controller-end"
         onClick={() => actions.endGame()}
       >
