@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import type { Player } from '../types';
 import { useTimer } from '../hooks/useTimer';
-import { playCatanHorn, playWarningTick, playUrgentTick, initAudio } from '../utils/sound';
+import { playWarningTick, playUrgentTick, initAudio } from '../utils/sound';
 
 interface TimerScreenProps {
   players: Player[];
@@ -24,7 +24,7 @@ export default function TimerScreen({ players, turnTime, onBack }: TimerScreenPr
   }, []);
 
   const onComplete = useCallback(() => {
-    playCatanHorn();
+    // Time's up — handled by voice clips in DisplayScreen
   }, []);
 
   const { timeLeft, isRunning, isPaused, start, pause, resume, reset } = useTimer(
