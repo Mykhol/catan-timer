@@ -59,6 +59,8 @@ export default function DisplayScreen({ gameCode, onBack }: DisplayScreenProps) 
       if (timeLeft <= 5) {
         playUrgentTick();
       } else if (timeLeft <= 10) {
+        playUrgentTick();
+      } else if (timeLeft <= 20) {
         playWarningTick();
       }
     }
@@ -161,17 +163,24 @@ export default function DisplayScreen({ gameCode, onBack }: DisplayScreenProps) 
     return 'Start';
   };
 
+  const urgencyLevel = !isCompleted && timeLeft > 0
+    ? timeLeft <= 5 ? 'critical'
+    : timeLeft <= 10 ? 'urgent'
+    : timeLeft <= 20 ? 'warning'
+    : timeLeft <= 30 ? 'caution'
+    : null
+    : null;
+
   const timerClass = [
     'timer-display',
-    !isCompleted && timeLeft <= 5 && timeLeft > 0 ? 'pulse-red' : '',
-    !isCompleted && timeLeft <= 10 && timeLeft > 5 ? 'pulse-yellow' : '',
+    urgencyLevel === 'critical' ? 'pulse-red' : '',
+    urgencyLevel === 'urgent' ? 'pulse-yellow' : '',
     isCompleted ? 'time-up' : '',
   ].filter(Boolean).join(' ');
 
   const screenClass = [
     'timer-screen',
-    !isCompleted && timeLeft <= 5 && timeLeft > 0 ? 'screen-flash-red' : '',
-    !isCompleted && timeLeft <= 10 && timeLeft > 5 ? 'screen-flash-yellow' : '',
+    urgencyLevel ? `screen-glow-${urgencyLevel}` : '',
     isCompleted ? 'screen-flash-up' : '',
   ].filter(Boolean).join(' ');
 

@@ -346,7 +346,7 @@ body {
   position: relative;
 }
 
-/* Full-page flash overlays */
+/* Screen border glow — 4 tiers of urgency */
 .timer-screen::after {
   content: '';
   position: fixed;
@@ -354,29 +354,57 @@ body {
   pointer-events: none;
   z-index: 100;
   opacity: 0;
+  border-radius: 0;
 }
 
-.screen-flash-yellow::after {
-  animation: flashYellow 1s ease-in-out infinite;
+/* 30s — subtle yellow border pulse */
+.screen-glow-caution::after {
+  box-shadow: inset 0 0 40px 8px rgba(241, 196, 15, 0.3);
+  animation: glowCaution 2s ease-in-out infinite;
 }
 
-.screen-flash-red::after {
-  animation: flashRed 0.6s ease-in-out infinite;
+/* 20s — orange border pulse */
+.screen-glow-warning::after {
+  box-shadow: inset 0 0 50px 12px rgba(243, 156, 18, 0.4);
+  animation: glowWarning 1.5s ease-in-out infinite;
 }
 
+/* 10s — deeper orange, faster pulse */
+.screen-glow-urgent::after {
+  box-shadow: inset 0 0 60px 15px rgba(230, 126, 34, 0.5);
+  animation: glowUrgent 1s ease-in-out infinite;
+}
+
+/* 5s — red, fast pulse */
+.screen-glow-critical::after {
+  box-shadow: inset 0 0 80px 20px rgba(192, 57, 43, 0.6);
+  animation: glowCritical 0.5s ease-in-out infinite;
+}
+
+/* Time's up — solid red glow */
 .screen-flash-up::after {
-  background: rgba(192, 57, 43, 0.25);
+  box-shadow: inset 0 0 100px 30px rgba(192, 57, 43, 0.5);
   opacity: 1;
 }
 
-@keyframes flashYellow {
-  0%, 100% { background: transparent; opacity: 0; }
-  50% { background: rgba(241, 196, 15, 0.12); opacity: 1; }
+@keyframes glowCaution {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 1; }
 }
 
-@keyframes flashRed {
-  0%, 100% { background: transparent; opacity: 0; }
-  50% { background: rgba(192, 57, 43, 0.18); opacity: 1; }
+@keyframes glowWarning {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 1; }
+}
+
+@keyframes glowUrgent {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 1; }
+}
+
+@keyframes glowCritical {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
 }
 
 .timer-top-bar {
