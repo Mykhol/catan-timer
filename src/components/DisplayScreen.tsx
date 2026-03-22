@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, type MouseEvent } from 'react';
 import { useGameSync } from '../hooks/useGameSync';
 import { useSyncedTimer } from '../hooks/useSyncedTimer';
 import { supabase } from '../lib/supabase';
@@ -21,6 +21,7 @@ export default function DisplayScreen({ gameCode, onBack }: DisplayScreenProps) 
   const completionWrittenRef = useRef(false);
   const [shareCopied, setShareCopied] = useState(false);
   const gameElapsed = useElapsedTime(gameState?.game_started_at);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   const handleShare = async () => {
     const url = `${window.location.origin}${window.location.pathname}?join=${gameCode}`;
@@ -178,28 +179,51 @@ export default function DisplayScreen({ gameCode, onBack }: DisplayScreenProps) 
     <div className={screenClass}>
       <div className="timer-top-bar">
         <div className="top-bar-left">
-          <button className="back-button" onClick={onBack}>&#x2190; Lobby</button>
-          <button className="back-button end-game-btn" onClick={() => actions.endGame()}>End Game</button>
-          <button className="back-button" onClick={() => window.open(`/board?game=${gameCode}`, '_blank')}>Board</button>
-        </div>
-        <div className="game-code-group">
           <span className="game-code-badge">{gameCode}</span>
-          <button className="share-button" onClick={handleShare}>
-            {shareCopied ? 'Copied!' : 'Share'}
-          </button>
-          <button
-            className={`share-button ${gameState.music_playing ? 'music-active' : ''}`}
-            onClick={() => actions.toggleMusic()}
-            title={gameState.music_playing ? 'Stop music' : 'Play music'}
-          >
-            {gameState.music_playing ? '♫' : '♪'}
-          </button>
         </div>
         <div className="top-bar-right">
           {gameElapsed && <span className="game-elapsed">{gameElapsed}</span>}
           <span className="round-indicator">Round {gameState.turn_number}</span>
+          <button className="hamburger-btn" onClick={() => setMenuOpen(!menuOpen)}>
+            &#x2630;
+          </button>
         </div>
       </div>
+
+      {menuOpen && (
+        <div className="game-menu-overlay" onClick={() => setMenuOpen(false)}>
+          <div className="game-menu" onClick={(e: MouseEvent) => e.stopPropagation()}>
+            <button className="game-menu-item" onClick={handleShare}>
+              {shareCopied ? 'Copied!' : 'Share Game'}
+            </button>
+            <button className="game-menu-item" onClick={() => { actions.toggleMusic(); }}>
+              {gameState.music_playing ? 'Stop Music' : 'Play Music'}
+            </button>
+            {gameState.music_playing && (
+              <div className="game-menu-volume">
+                <span>Volume</span>
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  value={gameState.music_volume ?? 40}
+                  onChange={(e) => actions.setVolume(Number(e.target.value))}
+                  className="volume-slider"
+                />
+              </div>
+            )}
+            <button className="game-menu-item" onClick={() => window.open(`/board?game=${gameCode}`, '_blank')}>
+              Explore Board
+            </button>
+            <button className="game-menu-item game-menu-danger" onClick={() => { actions.endGame(); setMenuOpen(false); }}>
+              End Game
+            </button>
+            <button className="game-menu-item" onClick={() => { setMenuOpen(false); onBack(); }}>
+              Leave to Lobby
+            </button>
+          </div>
+        </div>
+      )}
 
       <div className="player-banner" style={{ borderColor: currentColor }}>
         <div className="player-color-dot" style={{ backgroundColor: currentColor }} />
@@ -221,12 +245,6 @@ export default function DisplayScreen({ gameCode, onBack }: DisplayScreenProps) 
           &#x2190; Prev
         </button>
         <button
-          className="controller-btn controller-reset"
-          onClick={() => actions.resetTimer()}
-        >
-          Reset
-        </button>
-        <button
           className="controller-btn controller-play"
           onClick={handleStartPause}
         >
@@ -238,25 +256,6 @@ export default function DisplayScreen({ gameCode, onBack }: DisplayScreenProps) 
         >
           Next &#x2192;
         </button>
-      </div>
-
-      <div className="display-music-controls">
-        <button
-          className={`controller-btn controller-music ${gameState.music_playing ? 'controller-music-active' : ''}`}
-          onClick={() => actions.toggleMusic()}
-        >
-          {gameState.music_playing ? 'Stop Music' : 'Music'}
-        </button>
-        {gameState.music_playing && (
-          <input
-            type="range"
-            min="0"
-            max="100"
-            value={gameState.music_volume ?? 40}
-            onChange={(e) => actions.setVolume(Number(e.target.value))}
-            className="volume-slider"
-          />
-        )}
       </div>
 
       <div className="player-queue">

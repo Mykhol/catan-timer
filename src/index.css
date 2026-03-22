@@ -776,23 +776,86 @@ body {
   padding-bottom: 0;
 }
 
-.display-music-controls {
+/* ========== HAMBURGER MENU ========== */
+
+.hamburger-btn {
+  background: none;
+  border: 1px solid var(--catan-brown);
+  color: var(--catan-tan);
+  font-size: 1.2rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+  line-height: 1;
+}
+
+.hamburger-btn:hover {
+  border-color: var(--catan-gold);
+  color: var(--catan-gold);
+}
+
+.game-menu-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 100;
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 3.5rem;
+  padding-right: 1rem;
+}
+
+.game-menu {
+  background: linear-gradient(145deg, rgba(44, 24, 16, 0.98), rgba(26, 15, 10, 0.98));
+  border: 1px solid var(--catan-brown);
+  border-radius: 10px;
+  padding: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  width: 220px;
+  height: fit-content;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+}
+
+.game-menu-item {
+  background: none;
+  border: none;
+  color: var(--catan-cream);
+  font-family: 'Cinzel', serif;
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 0.6rem 0.75rem;
+  border-radius: 6px;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s;
+}
+
+.game-menu-item:hover {
+  background: rgba(218, 165, 32, 0.15);
+}
+
+.game-menu-danger {
+  color: var(--catan-red);
+}
+
+.game-menu-danger:hover {
+  background: rgba(192, 57, 43, 0.15);
+}
+
+.game-menu-volume {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  max-width: 480px;
-  margin: 0.5rem auto;
+  gap: 0.5rem;
+  padding: 0.4rem 0.75rem;
+  font-family: 'Cinzel', serif;
+  font-size: 0.75rem;
+  color: var(--catan-tan);
 }
 
-.display-music-controls .controller-btn {
-  flex-shrink: 0;
-  width: auto;
-  padding: 0 1rem;
-  height: 40px;
-  font-size: 0.85rem;
-}
-
-.display-music-controls .volume-slider {
+.game-menu-volume .volume-slider {
   flex: 1;
 }
 
