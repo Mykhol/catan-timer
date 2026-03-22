@@ -2,12 +2,13 @@ import { useState } from 'react';
 import type { Player } from '../types';
 
 interface SetupScreenProps {
-  onStart: (players: Player[], turnTime: number) => void;
+  onStart: (players: Player[], turnTime: number) => void | Promise<void>;
   title?: string;
   submitLabel?: string;
 }
 
 export default function SetupScreen({ onStart, title, submitLabel }: SetupScreenProps) {
+  const [creating, setCreating] = useState(false);
   const [numPlayers, setNumPlayers] = useState(4);
   const [turnTime, setTurnTime] = useState(60);
   const [players, setPlayers] = useState<Player[]>(
@@ -116,10 +117,17 @@ export default function SetupScreen({ onStart, title, submitLabel }: SetupScreen
 
         <button
           className="start-button"
-          onClick={() => onStart(players, turnTime)}
-          disabled={!canStart}
+          onClick={async () => {
+            setCreating(true);
+            try {
+              await onStart(players, turnTime);
+            } catch {
+              setCreating(false);
+            }
+          }}
+          disabled={!canStart || creating}
         >
-          {submitLabel || 'Start Game'}
+          {creating ? 'Creating...' : (submitLabel || 'Start Game')}
         </button>
       </div>
     </div>

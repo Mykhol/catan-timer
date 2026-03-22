@@ -3,6 +3,7 @@ import { useGameSync } from '../hooks/useGameSync';
 import { useSyncedTimer } from '../hooks/useSyncedTimer';
 import { useElapsedTime } from '../hooks/useElapsedTime';
 import StatsScreen from './StatsScreen';
+import { useWakeLock } from '../hooks/useWakeLock';
 import GameCodeBadge from './GameCodeBadge';
 
 const playerColors = ['#e74c3c', '#3498db', '#f39c12', '#2ecc71', '#9b59b6', '#e67e22'];
@@ -17,6 +18,7 @@ export default function ControllerScreen({ gameCode, onBack }: ControllerScreenP
   const timeLeft = useSyncedTimer(gameState);
   const gameElapsed = useElapsedTime(gameState?.game_started_at);
   const [menuOpen, setMenuOpen] = useState(false);
+  useWakeLock();
 
   if (error) {
     return (

@@ -7,6 +7,7 @@ import { startMusic, stopMusic, setMusicVolume } from '../utils/music';
 import { playRandomVoiceClip, playTimesUpClip, stopVoiceClip } from '../utils/voiceClips';
 import { useElapsedTime } from '../hooks/useElapsedTime';
 import StatsScreen from './StatsScreen';
+import { useWakeLock } from '../hooks/useWakeLock';
 import GameCodeBadge from './GameCodeBadge';
 
 const playerColors = ['#e74c3c', '#3498db', '#f39c12', '#2ecc71', '#9b59b6', '#e67e22'];
@@ -27,6 +28,7 @@ export default function DisplayScreen({ gameCode, onBack }: DisplayScreenProps) 
   const [shareCopied, setShareCopied] = useState(false);
   const gameElapsed = useElapsedTime(gameState?.game_started_at);
   const [menuOpen, setMenuOpen] = useState(false);
+  useWakeLock();
 
   const handleShare = async () => {
     const url = `${window.location.origin}${window.location.pathname}?join=${gameCode}`;
