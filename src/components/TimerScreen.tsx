@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
-import { type Player } from './SetupScreen';
+import type { Player } from '../types';
 import { useTimer } from '../hooks/useTimer';
 import { playCatanHorn, playWarningTick, playUrgentTick, initAudio } from '../utils/sound';
 

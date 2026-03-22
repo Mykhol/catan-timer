@@ -22,3 +22,10 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+.vercel
+.env*.local
+cookies.txt
+*.png
+
+# Large media — upload separately to CDN
+public/tavern-music.mp3

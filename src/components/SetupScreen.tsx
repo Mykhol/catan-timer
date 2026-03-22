@@ -1,15 +1,13 @@
 import { useState } from 'react';
-
-export interface Player {
-  id: number;
-  name: string;
-}
+import type { Player } from '../types';
 
 interface SetupScreenProps {
   onStart: (players: Player[], turnTime: number) => void;
+  title?: string;
+  submitLabel?: string;
 }
 
-export default function SetupScreen({ onStart }: SetupScreenProps) {
+export default function SetupScreen({ onStart, title, submitLabel }: SetupScreenProps) {
   const [numPlayers, setNumPlayers] = useState(4);
   const [turnTime, setTurnTime] = useState(60);
   const [players, setPlayers] = useState<Player[]>(
@@ -56,7 +54,7 @@ export default function SetupScreen({ onStart }: SetupScreenProps) {
       <div className="setup-header">
         <div className="hex-icon">&#x2B22;</div>
         <h1>Settlers of Catan</h1>
-        <h2>Turn Timer</h2>
+        <h2>{title || 'Turn Timer'}</h2>
       </div>
 
       <div className="setup-card">
@@ -121,7 +119,7 @@ export default function SetupScreen({ onStart }: SetupScreenProps) {
           onClick={() => onStart(players, turnTime)}
           disabled={!canStart}
         >
-          Start Game
+          {submitLabel || 'Start Game'}
         </button>
       </div>
     </div>
