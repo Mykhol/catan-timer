@@ -56,9 +56,7 @@ export default function DisplayScreen({ gameCode, onBack }: DisplayScreenProps) 
     if (prev === null) return;
 
     if (timeLeft !== prev && timeLeft > 0) {
-      if (timeLeft <= 5) {
-        playUrgentTick();
-      } else if (timeLeft <= 10) {
+      if (timeLeft <= 10) {
         playUrgentTick();
       } else if (timeLeft <= 20) {
         playWarningTick();
