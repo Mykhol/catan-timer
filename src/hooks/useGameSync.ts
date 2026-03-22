@@ -74,8 +74,12 @@ export function useGameSync(gameCode: string): UseGameSyncReturn {
   }, [gameCode]);
 
   const updateGame = useCallback(
-    async (updates: Partial<GameRow>) => {
+    async (updates: Partial<GameRow>, optimistic = true) => {
       if (!supabase || !gameStateRef.current) return;
+      // Apply optimistically so UI updates instantly
+      if (optimistic) {
+        setGameState((prev) => (prev ? { ...prev, ...updates } : prev));
+      }
       const { error: err } = await supabase
         .from('games')
         .update(updates)

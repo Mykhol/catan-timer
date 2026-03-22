@@ -19,7 +19,7 @@ export default function ControllerScreen({ gameCode, onBack }: ControllerScreenP
   const gameElapsed = useElapsedTime(gameState?.game_started_at);
 
   // Local volume state with debounced sync to DB
-  const [localVolume, setLocalVolume] = useState(gameState?.music_volume ?? 40);
+  const [localVolume, setLocalVolume] = useState(gameState?.music_volume ?? 30);
   const volumeTimerRef = useRef<number | null>(null);
 
   // Sync from DB when it changes externally

@@ -21,6 +21,7 @@ export default function DisplayScreen({ gameCode, onBack }: DisplayScreenProps) 
   const prevTimeLeftRef = useRef<number | null>(null);
   const voicePlayedRef = useRef(false);
   const voiceTriggerRef = useRef(Math.floor(Math.random() * 11) + 15); // 15-25s
+  const timesUpPlayedRef = useRef(false);
   const completionWrittenRef = useRef(false);
   const [shareCopied, setShareCopied] = useState(false);
   const gameElapsed = useElapsedTime(gameState?.game_started_at);
@@ -52,13 +53,15 @@ export default function DisplayScreen({ gameCode, onBack }: DisplayScreenProps) 
     }
   }, [gameState?.current_player_index, gameState?.timer_state]);
 
-  // Sound effects based on timeLeft changes
+  // All sound effects + voice clips — single effect on timeLeft
   useEffect(() => {
     const prev = prevTimeLeftRef.current;
     prevTimeLeftRef.current = timeLeft;
     if (prev === null) return;
+    if (timeLeft === prev) return;
 
-    if (timeLeft !== prev && timeLeft > 0) {
+    if (timeLeft > 0) {
+      // Tick sounds
       if (timeLeft <= 5) {
         playUrgentTick();
       } else if (timeLeft <= 10) {
@@ -71,26 +74,29 @@ export default function DisplayScreen({ gameCode, onBack }: DisplayScreenProps) 
         playRandomVoiceClip();
       }
     }
+
+    // Time's up — prev was >0 and now we're at 0
+    if (prev > 0 && timeLeft <= 0 && !timesUpPlayedRef.current) {
+      timesUpPlayedRef.current = true;
+      stopVoiceClip();
+      playTimesUpClip();
+    }
   }, [timeLeft]);
 
   // Reset voice clip state when turn changes
   useEffect(() => {
     voicePlayedRef.current = false;
-    voiceTriggerRef.current = Math.floor(Math.random() * 11) + 15; // new random 15-25s
+    voiceTriggerRef.current = Math.floor(Math.random() * 11) + 15;
+    timesUpPlayedRef.current = false;
     stopVoiceClip();
   }, [gameState?.current_player_index]);
 
-  // Authoritative completion detector
+  // Authoritative completion detector — writes to DB
   const writeCompletion = useCallback(async () => {
     if (!supabase || !gameState || completionWrittenRef.current) return;
     if (gameState.timer_state !== 'running') return;
-    // Guard: only complete if the DB timer_remaining is also near 0.
-    // This prevents a race where "Next" sets running + fresh timer_remaining
-    // but the realtime update arrives before useSyncedTimer recomputes.
     if (gameState.timer_remaining > 1) return;
     completionWrittenRef.current = true;
-    stopVoiceClip(); // Stop any warning clip that's still playing
-    playTimesUpClip();
     await supabase
       .from('games')
       .update({ timer_state: 'completed', timer_remaining: 0, timer_started_at: null })
@@ -103,10 +109,15 @@ export default function DisplayScreen({ gameCode, onBack }: DisplayScreenProps) 
     }
   }, [timeLeft, gameState?.timer_state, writeCompletion]);
 
-  // Reset completion flag when state changes from completed
+  // Handle receiving completed state from remote
   useEffect(() => {
     if (gameState?.timer_state === 'completed' && !completionWrittenRef.current) {
       completionWrittenRef.current = true;
+      if (!timesUpPlayedRef.current) {
+        timesUpPlayedRef.current = true;
+        stopVoiceClip();
+        playTimesUpClip();
+      }
     }
   }, [gameState?.timer_state]);
 
@@ -230,7 +241,7 @@ export default function DisplayScreen({ gameCode, onBack }: DisplayScreenProps) 
                   type="range"
                   min="0"
                   max="100"
-                  value={gameState.music_volume ?? 40}
+                  value={gameState.music_volume ?? 30}
                   onChange={(e) => actions.setVolume(Number(e.target.value))}
                   className="volume-slider"
                 />

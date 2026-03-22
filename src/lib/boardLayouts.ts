@@ -190,10 +190,9 @@ export const SEAFARERS_FOUR_ISLANDS: BoardDefinition = {
     { q: 2, r: 1, type: 'sheep', number: 9 },
     { q: 3, r: 0, type: 'wheat', number: 6 },
     { q: 3, r: 1, type: 'forest', number: 8 },
-    { q: 0, r: 0, type: 'desert' },
-    { q: 1, r: 0, type: 'gold', number: 2 },
-    { q: 0, r: 1, type: 'gold', number: 12 },
-    { q: -1, r: 1, type: 'sheep', number: 4 },
+    // Water between the four islands
+    { q: 0, r: 0, type: 'water' }, { q: 1, r: 0, type: 'water' },
+    { q: 0, r: 1, type: 'water' }, { q: -1, r: 1, type: 'water' },
     { q: 1, r: -1, type: 'water' }, { q: -1, r: 0, type: 'water' },
     { q: 0, r: -1, type: 'water' }, { q: 1, r: 1, type: 'water' },
     { q: -1, r: 2, type: 'water' }, { q: 0, r: 2, type: 'water' },

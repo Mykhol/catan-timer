@@ -39,7 +39,8 @@ export async function createGame(
         timer_state: 'idle',
         timer_remaining: turnTime,
         timer_started_at: null,
-        board_layout: boardLayout ?? null,
+        music_playing: true,
+        ...(boardLayout ? { board_layout: boardLayout } : {}),
       })
       .select()
       .single();

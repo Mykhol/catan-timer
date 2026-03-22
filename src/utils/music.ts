@@ -7,7 +7,7 @@ function getAudio(): HTMLAudioElement {
   if (!audio) {
     audio = new Audio('/tavern-music.mp3');
     audio.loop = true;
-    audio.volume = 0.4;
+    audio.volume = 0.3;
   }
   return audio;
 }
