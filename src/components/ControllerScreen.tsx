@@ -21,19 +21,23 @@ export default function ControllerScreen({ gameCode, onBack }: ControllerScreenP
   // Local volume state with debounced sync to DB
   const [localVolume, setLocalVolume] = useState(gameState?.music_volume ?? 30);
   const volumeTimerRef = useRef<number | null>(null);
+  const isSlidingRef = useRef(false);
 
-  // Sync from DB when it changes externally
+  // Sync from DB when it changes externally — but not while user is dragging
   useEffect(() => {
-    if (gameState?.music_volume != null) {
+    if (gameState?.music_volume != null && !isSlidingRef.current) {
       setLocalVolume(gameState.music_volume);
     }
   }, [gameState?.music_volume]);
 
   const handleVolumeChange = useCallback((val: number) => {
+    isSlidingRef.current = true;
     setLocalVolume(val);
     if (volumeTimerRef.current) clearTimeout(volumeTimerRef.current);
     volumeTimerRef.current = window.setTimeout(() => {
       actions.setVolume(val);
+      // Allow DB sync again after a short delay
+      setTimeout(() => { isSlidingRef.current = false; }, 500);
     }, 300);
   }, [actions]);
 

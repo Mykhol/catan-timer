@@ -178,30 +178,42 @@ export const EXPANSION_BOARD: BoardDefinition = {
 export const SEAFARERS_FOUR_ISLANDS: BoardDefinition = {
   name: 'Four Islands',
   tiles: [
-    { q: -3, r: 0, type: 'wheat', number: 5 },
-    { q: -3, r: 1, type: 'forest', number: 9 },
-    { q: -2, r: 0, type: 'sheep', number: 4 },
-    { q: 2, r: -3, type: 'brick', number: 8 },
-    { q: 3, r: -3, type: 'ore', number: 6 },
-    { q: 2, r: -2, type: 'wheat', number: 10 },
-    { q: -2, r: 3, type: 'ore', number: 3 },
-    { q: -3, r: 3, type: 'brick', number: 11 },
-    { q: -2, r: 2, type: 'forest', number: 5 },
-    { q: 2, r: 1, type: 'sheep', number: 9 },
-    { q: 3, r: 0, type: 'wheat', number: 6 },
-    { q: 3, r: 1, type: 'forest', number: 8 },
-    // Water between the four islands
-    { q: 0, r: 0, type: 'water' }, { q: 1, r: 0, type: 'water' },
-    { q: 0, r: 1, type: 'water' }, { q: -1, r: 1, type: 'water' },
-    { q: 1, r: -1, type: 'water' }, { q: -1, r: 0, type: 'water' },
-    { q: 0, r: -1, type: 'water' }, { q: 1, r: 1, type: 'water' },
-    { q: -1, r: 2, type: 'water' }, { q: 0, r: 2, type: 'water' },
-    { q: 1, r: -2, type: 'water' }, { q: -2, r: 1, type: 'water' },
-    { q: 2, r: -1, type: 'water' }, { q: -1, r: -1, type: 'water' },
-    { q: 2, r: 0, type: 'water' }, { q: 0, r: -2, type: 'water' },
+    // NE Island
+    { q: 1, r: -3, type: 'wheat', number: 4 },
+    { q: 2, r: -3, type: 'sheep', number: 3 },
+    { q: 1, r: -2, type: 'forest', number: 9 },
+    { q: 2, r: -2, type: 'brick', number: 5 },
+    { q: 2, r: -1, type: 'ore', number: 11 },
+    // NW Island
+    { q: -3, r: 0, type: 'forest', number: 4 },
+    { q: -2, r: -1, type: 'sheep', number: 9 },
+    { q: -3, r: 1, type: 'wheat', number: 6 },
+    { q: -2, r: 0, type: 'ore', number: 10 },
+    { q: -2, r: 1, type: 'brick', number: 8 },
+    // SW Island
+    { q: -2, r: 2, type: 'wheat', number: 11 },
+    { q: -1, r: 2, type: 'ore', number: 8 },
+    { q: -2, r: 3, type: 'forest', number: 3 },
+    { q: -1, r: 3, type: 'sheep', number: 9 },
+    { q: 0, r: 3, type: 'brick', number: 12 },
+    // SE Island
+    { q: 1, r: 1, type: 'forest', number: 2 },
+    { q: 2, r: 0, type: 'brick', number: 10 },
+    { q: 2, r: 1, type: 'wheat', number: 6 },
+    { q: 3, r: 0, type: 'ore', number: 5 },
+    { q: 3, r: -1, type: 'sheep', number: 4 },
+    // Water between islands
+    { q: 0, r: 0, type: 'water' },
+    { q: 1, r: 0, type: 'water' }, { q: 0, r: 1, type: 'water' },
+    { q: -1, r: 1, type: 'water' }, { q: -1, r: 0, type: 'water' },
+    { q: 0, r: -1, type: 'water' }, { q: 1, r: -1, type: 'water' },
+    { q: 0, r: 2, type: 'water' }, { q: -1, r: -1, type: 'water' },
+    { q: 0, r: -2, type: 'water' }, { q: 1, r: 2, type: 'water' },
+    { q: -1, r: -2, type: 'water' }, { q: 0, r: -3, type: 'water' },
+    { q: -3, r: 2, type: 'water' }, { q: -3, r: 3, type: 'water' },
   ],
   waterRings: 5,
-  // Fixed layout recommended
+  // Fixed layout — win at 13 VPs, 18 VP tokens for unexplored islands
 };
 
 export const SEAFARERS_NEW_SHORES: BoardDefinition = {
