@@ -103,7 +103,7 @@ export default function ControllerScreen({ gameCode, onBack }: ControllerScreenP
             <button className="rc-menu-item" onClick={() => window.open(`/board?game=${gameCode}`, '_blank')}>
               Explore Board
             </button>
-            <button className="rc-menu-item rc-menu-danger" onClick={() => { actions.endGame(); setMenuOpen(false); }}>
+            <button className="rc-menu-item rc-menu-danger" onClick={() => { if (window.confirm('End the game? This will show final stats.')) { actions.endGame(); setMenuOpen(false); } }}>
               End Game
             </button>
             <button className="rc-menu-item" onClick={() => { setMenuOpen(false); onBack(); }}>

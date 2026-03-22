@@ -254,7 +254,7 @@ export default function DisplayScreen({ gameCode, onBack }: DisplayScreenProps) 
             <button className="game-menu-item" onClick={() => window.open(`/board?game=${gameCode}`, '_blank')}>
               Explore Board
             </button>
-            <button className="game-menu-item game-menu-danger" onClick={() => { actions.endGame(); setMenuOpen(false); }}>
+            <button className="game-menu-item game-menu-danger" onClick={() => { if (window.confirm('End the game? This will show final stats.')) { actions.endGame(); setMenuOpen(false); } }}>
               End Game
             </button>
             <button className="game-menu-item" onClick={() => { setMenuOpen(false); onBack(); }}>
