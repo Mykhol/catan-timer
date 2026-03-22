@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useGameSync } from '../hooks/useGameSync';
 import { useSyncedTimer } from '../hooks/useSyncedTimer';
-import { supabase } from '../lib/supabase';
 import { useElapsedTime } from '../hooks/useElapsedTime';
 import StatsScreen from './StatsScreen';
 
@@ -15,7 +14,6 @@ interface ControllerScreenProps {
 export default function ControllerScreen({ gameCode, onBack }: ControllerScreenProps) {
   const { gameState, connected, error, actions } = useGameSync(gameCode);
   const timeLeft = useSyncedTimer(gameState);
-  const completionFallbackRef = useRef<number | null>(null);
   const gameElapsed = useElapsedTime(gameState?.game_started_at);
 
   // Local volume state with debounced sync to DB
@@ -41,32 +39,7 @@ export default function ControllerScreen({ gameCode, onBack }: ControllerScreenP
     }, 300);
   }, [actions]);
 
-  // Fallback completion detector: if display hasn't written completed after 500ms
-  useEffect(() => {
-    if (completionFallbackRef.current !== null) {
-      clearTimeout(completionFallbackRef.current);
-      completionFallbackRef.current = null;
-    }
-
-    if (timeLeft <= 0 && gameState?.timer_state === 'running' && supabase) {
-      completionFallbackRef.current = window.setTimeout(async () => {
-        // Re-check: only write if still running
-        if (gameState.timer_state === 'running') {
-          await supabase!
-            .from('games')
-            .update({ timer_state: 'completed', timer_remaining: 0, timer_started_at: null })
-            .eq('id', gameState.id)
-            .eq('timer_state', 'running'); // Only if still running (display might have already written)
-        }
-      }, 500);
-    }
-
-    return () => {
-      if (completionFallbackRef.current !== null) {
-        clearTimeout(completionFallbackRef.current);
-      }
-    };
-  }, [timeLeft, gameState?.timer_state, gameState?.id]);
+  // Controller never writes completion — that's the display's responsibility
 
   if (error) {
     return (
