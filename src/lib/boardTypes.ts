@@ -28,6 +28,13 @@ export interface BoardDefinition {
   waterRings?: number;
   /** Harbors on the water ring */
   harbors?: BoardTile[];
+  /** What can be shuffled on this board */
+  variableSetup?: {
+    /** Can resource hex types be shuffled? */
+    resources?: boolean;
+    /** Can number tokens be shuffled? */
+    numbers?: boolean;
+  };
 }
 
 // ─── Tile color palette ─────────────────────────────────────────

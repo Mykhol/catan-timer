@@ -25,5 +25,6 @@ export interface GameRow {
   music_playing: boolean;
   music_volume: number;
   turn_log: TurnLogEntry[];
+  board_layout: import('./lib/boardTypes').BoardDefinition | null;
   created_at: string;
 }

@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import type { GameRow, Player } from '../types';
+import type { BoardDefinition } from './boardTypes';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || import.meta.env.SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || import.meta.env.SUPABASE_ANON_KEY;
@@ -20,7 +21,8 @@ export function generateGameCode(): string {
 
 export async function createGame(
   players: Player[],
-  turnTime: number
+  turnTime: number,
+  boardLayout?: BoardDefinition
 ): Promise<GameRow> {
   if (!supabase) throw new Error('Supabase not configured');
 
@@ -37,6 +39,7 @@ export async function createGame(
         timer_state: 'idle',
         timer_remaining: turnTime,
         timer_started_at: null,
+        board_layout: boardLayout ?? null,
       })
       .select()
       .single();

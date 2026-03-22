@@ -4,7 +4,6 @@ import type { BoardDefinition } from './lib/boardTypes';
 import { createGame } from './lib/supabase';
 import { STANDARD_BOARD } from './lib/boardLayouts';
 import SetupScreen from './components/SetupScreen';
-import TimerScreen from './components/TimerScreen';
 import LobbyScreen from './components/LobbyScreen';
 import DisplayScreen from './components/DisplayScreen';
 import ControllerScreen from './components/ControllerScreen';
@@ -15,9 +14,7 @@ import './index.css';
 type Screen =
   | { type: 'lobby' }
   | { type: 'board-generator' }
-  | { type: 'local-setup' }
-  | { type: 'local-game'; players: Player[]; turnTime: number }
-  | { type: 'host-setup' }
+  | { type: 'game-setup' }
   | { type: 'display'; gameCode: string }
   | { type: 'controller'; gameCode: string };
 
@@ -59,9 +56,9 @@ function App() {
     syncUrl(next);
   };
 
-  const handleHostStart = async (players: Player[], turnTime: number) => {
+  const handleCreateGame = async (players: Player[], turnTime: number) => {
     try {
-      const game = await createGame(players, turnTime);
+      const game = await createGame(players, turnTime, board);
       navigate({ type: 'display', gameCode: game.game_code });
     } catch (err) {
       console.error('Failed to create game:', err);
@@ -71,22 +68,20 @@ function App() {
 
   return (
     <>
-      <CatanBoard3D board={board} />
+      <CatanBoard3D
+        board={board}
+        spinning={screen.type !== 'board-generator'}
+        dimOverlay={screen.type !== 'board-generator'}
+      />
       {screen.type === 'lobby' && (
         <LobbyScreen
           onAction={(action) => {
             switch (action.type) {
-              case 'local':
-                navigate({ type: 'local-setup' });
-                break;
-              case 'host':
-                navigate({ type: 'host-setup' });
+              case 'new-game':
+                navigate({ type: 'board-generator' });
                 break;
               case 'join':
                 navigate({ type: 'controller', gameCode: action.gameCode });
-                break;
-              case 'generate-board':
-                navigate({ type: 'board-generator' });
                 break;
             }
           }}
@@ -96,29 +91,15 @@ function App() {
         <BoardGeneratorScreen
           currentBoard={board}
           onSelectBoard={setBoard}
-          onContinue={() => navigate({ type: 'local-setup' })}
+          onContinue={() => navigate({ type: 'game-setup' })}
           onBack={() => navigate({ type: 'lobby' })}
         />
       )}
-      {screen.type === 'local-setup' && (
+      {screen.type === 'game-setup' && (
         <SetupScreen
-          onStart={(players, turnTime) =>
-            navigate({ type: 'local-game', players, turnTime })
-          }
-        />
-      )}
-      {screen.type === 'local-game' && (
-        <TimerScreen
-          players={screen.players}
-          turnTime={screen.turnTime}
-          onBack={() => navigate({ type: 'lobby' })}
-        />
-      )}
-      {screen.type === 'host-setup' && (
-        <SetupScreen
-          title="Host Game"
+          title="Game Setup"
           submitLabel="Create Game"
-          onStart={handleHostStart}
+          onStart={handleCreateGame}
         />
       )}
       {screen.type === 'display' && (

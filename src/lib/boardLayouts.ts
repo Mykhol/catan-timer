@@ -138,6 +138,7 @@ export const STANDARD_BOARD: BoardDefinition = {
   name: 'Standard (3-4)',
   tiles: STANDARD_TILES,
   waterRings: 3,
+  variableSetup: { resources: true, numbers: true },
 };
 
 // ─── 5-6 player expansion ───────────────────────────────────────
@@ -169,6 +170,7 @@ export const EXPANSION_BOARD: BoardDefinition = {
   name: 'Expansion (5-6)',
   tiles: buildExpansionTiles(),
   waterRings: 4,
+  variableSetup: { resources: true, numbers: true },
 };
 
 // ─── Seafarers scenarios ────────────────────────────────────────
@@ -200,6 +202,7 @@ export const SEAFARERS_FOUR_ISLANDS: BoardDefinition = {
     { q: 2, r: 0, type: 'water' }, { q: 0, r: -2, type: 'water' },
   ],
   waterRings: 5,
+  // Fixed layout recommended
 };
 
 export const SEAFARERS_NEW_SHORES: BoardDefinition = {
@@ -234,6 +237,7 @@ export const SEAFARERS_NEW_SHORES: BoardDefinition = {
     { q: -3, r: 0, type: 'brick', number: 3 },
   ],
   waterRings: 5,
+  variableSetup: { resources: true, numbers: true },
 };
 
 export const SEAFARERS_FOG_ISLANDS: BoardDefinition = {
@@ -267,6 +271,7 @@ export const SEAFARERS_FOG_ISLANDS: BoardDefinition = {
     { q: -3, r: 2, type: 'water' }, { q: -3, r: 3, type: 'water' },
   ],
   waterRings: 4,
+  variableSetup: { numbers: true },
 };
 
 export const SEAFARERS_THROUGH_DESERT: BoardDefinition = {
@@ -300,6 +305,7 @@ export const SEAFARERS_THROUGH_DESERT: BoardDefinition = {
     { q: 1, r: 1, type: 'water' }, { q: 2, r: 1, type: 'water' },
   ],
   waterRings: 5,
+  // Fixed layout — balanced only with given setup
 };
 
 // ─── Fair random board generator ────────────────────────────────
@@ -375,6 +381,45 @@ export function randomStandardBoard(options: RandomBoardOptions = {}): BoardDefi
 }
 
 // ─── All boards ─────────────────────────────────────────────────
+
+/** Shuffle the number tokens on any board while keeping tile types + positions fixed.
+ *  Retries up to maxAttempts to satisfy fairness rules. */
+export function shuffleBoard(board: BoardDefinition, options: RandomBoardOptions = {}): BoardDefinition {
+  const fairness = options.fairness ?? DEFAULT_FAIRNESS;
+  const maxAttempts = options.maxAttempts ?? 200;
+
+  // Collect all number tokens from non-desert/water/fog tiles
+  const numberedIndices: number[] = [];
+  const numbers: number[] = [];
+  board.tiles.forEach((tile, i) => {
+    if (tile.number != null) {
+      numberedIndices.push(i);
+      numbers.push(tile.number);
+    }
+  });
+
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    const shuffledNumbers = shuffle([...numbers]);
+    const newTiles = board.tiles.map((tile, i) => {
+      const ni = numberedIndices.indexOf(i);
+      if (ni === -1) return { ...tile };
+      return { ...tile, number: shuffledNumbers[ni] };
+    });
+
+    if (isFairBoard(newTiles, fairness)) {
+      return { ...board, name: board.name, tiles: newTiles };
+    }
+  }
+
+  // Fallback — return a shuffled version even if not perfectly fair
+  const shuffledNumbers = shuffle([...numbers]);
+  const newTiles = board.tiles.map((tile, i) => {
+    const ni = numberedIndices.indexOf(i);
+    if (ni === -1) return { ...tile };
+    return { ...tile, number: shuffledNumbers[ni] };
+  });
+  return { ...board, name: board.name, tiles: newTiles };
+}
 
 export const ALL_BOARDS: BoardDefinition[] = [
   STANDARD_BOARD,

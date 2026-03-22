@@ -1,11 +1,8 @@
 import { useState } from 'react';
-import { supabase } from '../lib/supabase';
 
 type LobbyAction =
-  | { type: 'local' }
-  | { type: 'host' }
-  | { type: 'join'; gameCode: string }
-  | { type: 'generate-board' };
+  | { type: 'new-game' }
+  | { type: 'join'; gameCode: string };
 
 interface LobbyScreenProps {
   onAction: (action: LobbyAction) => void;
@@ -14,8 +11,6 @@ interface LobbyScreenProps {
 export default function LobbyScreen({ onAction }: LobbyScreenProps) {
   const [joinCode, setJoinCode] = useState('');
   const [joinError, setJoinError] = useState('');
-
-  const remoteEnabled = !!supabase;
 
   const handleJoin = () => {
     const code = joinCode.trim().toUpperCase();
@@ -38,51 +33,33 @@ export default function LobbyScreen({ onAction }: LobbyScreenProps) {
       <div className="setup-card lobby-card">
         <button
           className="start-button lobby-btn"
-          onClick={() => onAction({ type: 'local' })}
+          onClick={() => onAction({ type: 'new-game' })}
         >
-          Play Locally
+          New Game
         </button>
 
-        <button
-          className="start-button lobby-btn lobby-btn-secondary"
-          onClick={() => onAction({ type: 'generate-board' })}
-        >
-          Generate Board
-        </button>
+        <div className="lobby-divider">
+          <span>or join a game</span>
+        </div>
 
-        {remoteEnabled && (
-          <>
-            <div className="lobby-divider">
-              <span>or play remotely</span>
-            </div>
-
-            <button
-              className="start-button lobby-btn lobby-btn-secondary"
-              onClick={() => onAction({ type: 'host' })}
-            >
-              Host Game
-            </button>
-
-            <div className="lobby-join">
-              <input
-                type="text"
-                placeholder="CATAN-XXXX"
-                value={joinCode}
-                onChange={(e) => {
-                  setJoinCode(e.target.value.toUpperCase());
-                  setJoinError('');
-                }}
-                onKeyDown={(e) => e.key === 'Enter' && handleJoin()}
-                className="lobby-join-input"
-                maxLength={10}
-              />
-              <button className="start-button lobby-btn lobby-btn-join" onClick={handleJoin}>
-                Join Game
-              </button>
-            </div>
-            {joinError && <p className="lobby-error">{joinError}</p>}
-          </>
-        )}
+        <div className="lobby-join">
+          <input
+            type="text"
+            placeholder="CATAN-XXXX"
+            value={joinCode}
+            onChange={(e) => {
+              setJoinCode(e.target.value.toUpperCase());
+              setJoinError('');
+            }}
+            onKeyDown={(e) => e.key === 'Enter' && handleJoin()}
+            className="lobby-join-input"
+            maxLength={10}
+          />
+          <button className="start-button lobby-btn lobby-btn-join" onClick={handleJoin}>
+            Join Game
+          </button>
+        </div>
+        {joinError && <p className="lobby-error">{joinError}</p>}
       </div>
     </div>
   );
