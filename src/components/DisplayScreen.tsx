@@ -167,7 +167,7 @@ export default function DisplayScreen({ gameCode, onBack }: DisplayScreenProps) 
     ? `${minutes}:${seconds.toString().padStart(2, '0')}`
     : `${seconds}`;
 
-  const isCompleted = gameState.timer_state === 'completed' || timeLeft === 0;
+  const isCompleted = gameState.timer_state === 'completed' || (timeLeft === 0 && gameState.timer_state === 'running');
   const isIdle = gameState.timer_state === 'idle';
   const isRunning = gameState.timer_state === 'running' && timeLeft > 0;
   const isPaused = gameState.timer_state === 'paused';

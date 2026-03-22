@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import type { GameRow } from '../types';
 
 export function useSyncedTimer(gameState: GameRow | null): number {
-  const [timeLeft, setTimeLeft] = useState(() => gameState?.timer_remaining ?? 0);
+  const [timeLeft, setTimeLeft] = useState(() => gameState?.timer_remaining ?? -1);
   const intervalRef = useRef<number | null>(null);
 
   useEffect(() => {
