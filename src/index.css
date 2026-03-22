@@ -1485,6 +1485,20 @@ body {
 .rc-menu-item:hover { background: rgba(218, 165, 32, 0.15); }
 .rc-menu-danger { color: var(--catan-red); }
 
+.rc-menu-volume {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.3rem 0.75rem;
+  font-family: 'Cinzel', serif;
+  font-size: 0.7rem;
+  color: var(--catan-tan);
+}
+
+.rc-menu-volume .volume-slider {
+  flex: 1;
+}
+
 .rc-player {
   display: flex;
   align-items: center;

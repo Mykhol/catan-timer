@@ -83,6 +83,19 @@ export default function ControllerScreen({ gameCode, onBack }: ControllerScreenP
             <button className="rc-menu-item" onClick={() => { actions.toggleMusic(); }}>
               {gameState.music_playing ? 'Stop Music' : 'Play Music'}
             </button>
+            {gameState.music_playing && (
+              <div className="rc-menu-volume">
+                <span>Vol</span>
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  value={gameState.music_volume ?? 30}
+                  onChange={(e) => actions.setVolume(Number(e.target.value))}
+                  className="volume-slider"
+                />
+              </div>
+            )}
             <button className="rc-menu-item" onClick={() => window.open(`/board?game=${gameCode}`, '_blank')}>
               Explore Board
             </button>
