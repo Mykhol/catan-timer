@@ -10,42 +10,29 @@ function getAudioContext(): AudioContext {
   return audioCtx;
 }
 
-// Gentle wooden tick — soft sine with quick decay, like a board game piece tapping
+// Very subtle soft tick — barely noticeable background beep
 export function playWarningTick(): void {
   const ctx = getAudioContext();
   const now = ctx.currentTime;
 
-  // Low warm tone
   const osc = ctx.createOscillator();
   const gain = ctx.createGain();
   const filter = ctx.createBiquadFilter();
   osc.type = 'sine';
-  osc.frequency.setValueAtTime(440, now);
-  osc.frequency.exponentialRampToValueAtTime(220, now + 0.15);
+  osc.frequency.setValueAtTime(330, now);
+  osc.frequency.exponentialRampToValueAtTime(200, now + 0.12);
   filter.type = 'lowpass';
-  filter.frequency.value = 600;
-  gain.gain.setValueAtTime(0.12, now);
-  gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+  filter.frequency.value = 400;
+  gain.gain.setValueAtTime(0.06, now);
+  gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
   osc.connect(filter);
   filter.connect(gain);
   gain.connect(ctx.destination);
   osc.start(now);
-  osc.stop(now + 0.2);
-
-  // Soft click layer
-  const click = ctx.createOscillator();
-  const clickGain = ctx.createGain();
-  click.type = 'triangle';
-  click.frequency.value = 800;
-  clickGain.gain.setValueAtTime(0.06, now);
-  clickGain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
-  click.connect(clickGain);
-  clickGain.connect(ctx.destination);
-  click.start(now);
-  click.stop(now + 0.05);
+  osc.stop(now + 0.15);
 }
 
-// Slightly more intense version — same character, a bit louder + higher
+// Same gentle tick, just a touch louder for the final seconds
 export function playUrgentTick(): void {
   const ctx = getAudioContext();
   const now = ctx.currentTime;
@@ -54,28 +41,17 @@ export function playUrgentTick(): void {
   const gain = ctx.createGain();
   const filter = ctx.createBiquadFilter();
   osc.type = 'sine';
-  osc.frequency.setValueAtTime(520, now);
-  osc.frequency.exponentialRampToValueAtTime(260, now + 0.15);
+  osc.frequency.setValueAtTime(330, now);
+  osc.frequency.exponentialRampToValueAtTime(200, now + 0.12);
   filter.type = 'lowpass';
-  filter.frequency.value = 800;
-  gain.gain.setValueAtTime(0.16, now);
-  gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+  filter.frequency.value = 400;
+  gain.gain.setValueAtTime(0.1, now);
+  gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
   osc.connect(filter);
   filter.connect(gain);
   gain.connect(ctx.destination);
   osc.start(now);
-  osc.stop(now + 0.2);
-
-  const click = ctx.createOscillator();
-  const clickGain = ctx.createGain();
-  click.type = 'triangle';
-  click.frequency.value = 900;
-  clickGain.gain.setValueAtTime(0.08, now);
-  clickGain.gain.exponentialRampToValueAtTime(0.001, now + 0.06);
-  click.connect(clickGain);
-  clickGain.connect(ctx.destination);
-  click.start(now);
-  click.stop(now + 0.06);
+  osc.stop(now + 0.15);
 }
 
 export function playCatanHorn(): void {

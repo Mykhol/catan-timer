@@ -4,6 +4,7 @@ import { useSyncedTimer } from '../hooks/useSyncedTimer';
 import { supabase } from '../lib/supabase';
 import { playCatanHorn, playWarningTick, playUrgentTick, initAudio } from '../utils/sound';
 import { startMusic, stopMusic, setMusicVolume } from '../utils/music';
+import { playRandomVoiceClip, stopVoiceClip } from '../utils/voiceClips';
 import { useElapsedTime } from '../hooks/useElapsedTime';
 import StatsScreen from './StatsScreen';
 
@@ -18,6 +19,8 @@ export default function DisplayScreen({ gameCode, onBack }: DisplayScreenProps) 
   const { gameState, connected, actions } = useGameSync(gameCode);
   const timeLeft = useSyncedTimer(gameState);
   const prevTimeLeftRef = useRef<number | null>(null);
+  const voicePlayedRef = useRef(false);
+  const voiceTriggerRef = useRef(Math.floor(Math.random() * 11) + 15); // 15-25s
   const completionWrittenRef = useRef(false);
   const [shareCopied, setShareCopied] = useState(false);
   const gameElapsed = useElapsedTime(gameState?.game_started_at);
@@ -56,13 +59,26 @@ export default function DisplayScreen({ gameCode, onBack }: DisplayScreenProps) 
     if (prev === null) return;
 
     if (timeLeft !== prev && timeLeft > 0) {
-      if (timeLeft <= 10) {
+      if (timeLeft <= 5) {
         playUrgentTick();
-      } else if (timeLeft <= 20) {
+      } else if (timeLeft <= 10) {
         playWarningTick();
+      }
+
+      // Voice clip — play once per turn at a random threshold
+      if (!voicePlayedRef.current && timeLeft <= voiceTriggerRef.current && timeLeft > 5) {
+        voicePlayedRef.current = true;
+        playRandomVoiceClip();
       }
     }
   }, [timeLeft]);
+
+  // Reset voice clip state when turn changes
+  useEffect(() => {
+    voicePlayedRef.current = false;
+    voiceTriggerRef.current = Math.floor(Math.random() * 11) + 15; // new random 15-25s
+    stopVoiceClip();
+  }, [gameState?.current_player_index]);
 
   // Authoritative completion detector
   const writeCompletion = useCallback(async () => {
