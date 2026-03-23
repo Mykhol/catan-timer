@@ -1,0 +1,5 @@
+{
+  "rewrites": [
+    { "source": "/((?!assets|voice-clips|voice-timesup|tavern-music|silence|favicon|icons).*)", "destination": "/index.html" }
+  ]
+}
